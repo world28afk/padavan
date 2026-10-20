@@ -347,7 +347,7 @@ function show_banner(L3){
 
 	// block firmware version
 	bc += '<div class="span6">\n';
-	bc += '<div class="well" style="margin-bottom: 0px; height: 109px; padding: 5px 6px 8px 6px;">\n';
+	bc += '<div class="well" style="margin-bottom: 0px; min-height: 109px; padding: 5px 6px 8px 6px;">\n';
 	bc += '<div class="row-fluid">\n';
 	bc += '<table class="table table-condensed" style="margin-bottom: 0px">\n';
 	bc += '  <tr>\n';

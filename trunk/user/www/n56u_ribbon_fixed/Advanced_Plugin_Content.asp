@@ -32,6 +32,7 @@ function pluginAction(cmd, name){
 	f.elements['plugin_cmd'].value = cmd;
 	f.elements['plugin_name'].value = name;
 	f.elements['plugin_code'].value = '';
+	showLoading();
 	f.submit();
 }
 
@@ -48,6 +49,7 @@ function pluginAdd(){
 	}
 	f.elements['plugin_cmd'].value = 'add';
 	f.elements['plugin_autostart'].value = document.getElementById('plugin_auto').checked ? '1' : '0';
+	showLoading();
 	f.submit();
 }
 
@@ -105,7 +107,7 @@ function pluginAdd(){
 
                                     <hr>
 
-                                    <form id="pluginForm" method="post" action="/apply.cgi" target="hidden_frame">
+                                    <form id="pluginForm" method="post" action="/apply.cgi">
                                         <input type="hidden" name="action_mode" value=" PluginCmd ">
                                         <input type="hidden" name="plugin_cmd" value="add">
                                         <input type="hidden" name="plugin_autostart" value="0">

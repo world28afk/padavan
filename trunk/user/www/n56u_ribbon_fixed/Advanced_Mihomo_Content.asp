@@ -40,6 +40,9 @@ function initial(){
 }
 
 function mhSubmit(cmd){
+	if (cmd == "stop" && !confirm("确定停止 mihomo 并清理 iptables 规则？"))
+		return;
+	showLoading();
 	var f = document.getElementById("mhForm");
 	f.elements["mihomo_cmd"].value = cmd;
 	f.submit();
@@ -133,7 +136,7 @@ function mhSub(){
                                         </tr>
                                     </table>
 
-                                    <form id="mhForm" method="post" action="/apply.cgi" target="hidden_frame">
+                                    <form id="mhForm" method="post" action="/apply.cgi">
                                         <input type="hidden" name="action_mode" value=" MihomoCmd ">
                                         <input type="hidden" name="mihomo_cmd" value="">
                                         <input type="hidden" name="mihomo_url" value="">
