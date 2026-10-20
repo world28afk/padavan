@@ -33,7 +33,7 @@ K2P 可用的 Padavan 4.4 内核固件维护仓库：在原作者 [TurBoTse](htt
 换插件必须重新编译。本仓库增加了一套运行时插件框架：
 
 - 后端：`/sbin/plugin-mgr`（`trunk/user/pluginmgr/`），插件持久化在 `/etc/storage/plugins/<name>/`
-- WebUI：`系统管理 → 自定义脚本` 页面底部新增“运行时插件”面板，可在线添加脚本、启动/停止、删除、开关开机自启
+- WebUI：左侧「高级设置 → 插件管理」（与「系统管理」同级）新增插件面板，可在线添加脚本、启动/停止、删除、开关开机自启
 - 开机自启：`rc` 在服务启动后执行 `plugin-mgr autostart`
 - 插件目录结构：
 

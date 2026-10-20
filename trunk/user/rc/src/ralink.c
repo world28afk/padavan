@@ -1382,7 +1382,18 @@ gen_ralink_config(int is_soc_ap, int is_aband, int disable_autoscan)
 			i_val = 2;
 #endif
 		if (i_HTBW_MAX == 0 || i_VHTBW_MAX == 0) i_val = 0;
+#if defined (BOARD_MT7615_DBDC) || defined (BOARD_MT7915_DBDC)
+		/* In DBDC mode the driver parses VHT_BW as a per-wdev list
+		 * ("2.4G;5G", see cmm_profile.c).  A single value only reaches the
+		 * first wdev, which left the 5G wdev at its 40MHz default. */
+		{
+			int bw_2g = nvram_wlan_get_int(0, "HT_BW");
+			if (bw_2g > 1) bw_2g = 1;
+			fprintf(fp, "VHT_BW=%d;%d\n", bw_2g, i_val);
+		}
+#else
 		fprintf(fp, "VHT_BW=%d\n", i_val);
+#endif
 		
 		//VHT_SGI
 		fprintf(fp, "VHT_SGI=%d\n", 1);

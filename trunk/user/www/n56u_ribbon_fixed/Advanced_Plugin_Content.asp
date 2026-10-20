@@ -21,7 +21,7 @@
 
 function initial(){
 	show_banner(1);
-	show_menu(5,8,4);
+	show_menu(5,21,1);
 	show_footer();
 }
 
@@ -90,7 +90,7 @@ function pluginAdd(){
                 <div class="row-fluid">
                     <div class="span12">
                         <div class="box well grad_colour_dark_blue">
-                            <h2 class="box_head round_top">高级设置 - 插件管理</h2>
+                            <h2 class="box_head round_top">插件管理</h2>
                             <div class="round_bottom">
                                 <div class="row-fluid">
                                     <div id="tabMenu" class="submenuBlock"></div>
