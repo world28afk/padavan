@@ -74,6 +74,33 @@ plugin-mgr rm demo
 > 注意：插件保存在 `/etc/storage`（NVRAM 之外的持久分区），大文件请放到 U 盘 / `/opt`，不要在
 > `/etc/storage` 里塞几十 MB 的东西。
 
+### 4. 5GHz 跑不满（80MHz 被降成 40MHz）
+
+`trunk/user/rc/src/ralink.c` 在生成 `/etc/Wireless/iNIC/iNIC_ap.dat` 时，把 WebUI 的
+`wl_HT_BW`（0=20M / 1=40M / 2=80M / 3=160M）写入驱动 `VHT_BW` 时做了一次错误钳位：
+
+```c
+/* 修复前：80MHz(2) 被压成 40MHz(1) */
+i_val = (i_val > 1) ? 1 : 0;
+fprintf(fp, "VHT_BW=%d\n", i_val);
+```
+
+K2P 是 `BOARD_MT7615_DBDC`，于是无论怎么选 80MHz，驱动拿到的都是 `VHT_BW=1`（VHT40 = 300Mbps PHY），
+这正好对应“靠近路由 5G 也只有 300Mbps”；有线走 MT7621 硬件 NAT 所以能跑满 900Mbps+。
+
+修复后按 0/1/2/3 原样下发，DBDC 芯片最高 80MHz，非 DBDC 但驱动不支持 160MHz 的平台仍回落到 80MHz。
+
+刷机后自查：
+
+```sh
+grep -E '^(HT_BW|VHT_BW)=' /etc/Wireless/iNIC/iNIC_ap.dat   # 5G 应为 VHT_BW=2
+iwpriv rai0 get HtBw ; iwpriv rai0 get VhtBw                   # 运行时确认
+```
+
+另外 5G 想跑到 400Mbps+ 还需要：频道选 149/153/157/161（80MHz）、带宽选 20/40/80、加密用 AES
+（TKIP 会掉到 54Mbps）、客户端本身是 2x2 11ac。MT7621 没有 WED，无线转发仍是 CPU 转发，
+2x2 80MHz 的实测上限大约 450~550Mbps。
+
 ## 编译
 
 依赖（Debian/Ubuntu 22.04）：

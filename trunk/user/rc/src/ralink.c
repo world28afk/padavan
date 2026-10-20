@@ -1368,18 +1368,21 @@ gen_ralink_config(int is_soc_ap, int is_aband, int disable_autoscan)
 		
 		if (i_phy_mode == PHY_11VHT_N_A_MIXED || i_phy_mode == PHY_11VHT_N_MIXED || i_phy_mode == PHY_11AX_5G)
 			i_VHTBW_MAX = 1;
-		//VHT_BW
+		//VHT_BW  (0:20MHz, 1:40MHz, 2:80MHz, 3:160MHz)
 		i_val = nvram_wlan_get_int(is_aband, "HT_BW");
+		if (i_val > 3) i_val = 3;
 #if (USE_WID_5G==7615 && !defined (BOARD_MT7615_DBDC)) || (USE_WID_5G==7915 && !defined (BOARD_MT7915_DBDC))
-		if (i_val == 3) //160Mhz
-			fprintf(fp, "VHT_BW=%d\n", 2);
-		else
+		/* 160MHz is not usable on this configuration, fall back to 80MHz */
+		if (i_val == 3)
+			i_val = 2;
 #endif
-		{
-			i_val = (i_val > 1) ? 1 : 0;
-			if (i_HTBW_MAX == 0 || i_VHTBW_MAX == 0) i_val = 0;
-			fprintf(fp, "VHT_BW=%d\n", i_val);
-		}
+#if defined (BOARD_MT7615_DBDC) || defined (BOARD_MT7915_DBDC)
+		/* DBDC splits both bands on the same chip: 160MHz is impossible */
+		if (i_val > 2)
+			i_val = 2;
+#endif
+		if (i_HTBW_MAX == 0 || i_VHTBW_MAX == 0) i_val = 0;
+		fprintf(fp, "VHT_BW=%d\n", i_val);
 		
 		//VHT_SGI
 		fprintf(fp, "VHT_SGI=%d\n", 1);
