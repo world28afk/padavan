@@ -1,0 +1,182 @@
+#!/bin/sh
+#
+# plugin-mgr - runtime plugin manager for Padavan
+#
+# Plugins are plain shell packages stored in persistent storage, so they can
+# be added/removed after the firmware was flashed (no rebuild required).
+#
+# Layout:
+#   /etc/storage/plugins/<name>/main.sh       - entry point: start|stop|status
+#   /etc/storage/plugins/<name>/plugin.conf   - NAME=, VERSION=, AUTOSTART=0|1
+#   /tmp/plugin/<name>.pid                    - pid of the running wrapper
+#   /tmp/plugin/<name>.log                    - stdout/stderr of the plugin
+#
+# The entry point gets these environment variables:
+#   PLUGIN_NAME, PLUGIN_DIR, PLUGIN_RUN_DIR
+#
+# Copyright (C) 2026 TurBoTse padavan contributors
+# Licensed under the MIT license, see the LICENSE file.
+#
+
+PLUGINS_DIR="${PLUGINS_DIR:-/etc/storage/plugins}"
+RUN_DIR="${RUN_DIR:-/tmp/plugin}"
+
+log() {
+	logger -t plugin-mgr "$@" 2>/dev/null
+	echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$RUN_DIR/plugin-mgr.log" 2>/dev/null
+}
+
+valid_name() {
+	case "$1" in
+		''|*[!A-Za-z0-9_-]*) return 1 ;;
+	esac
+	[ ${#1} -le 32 ] || return 1
+	return 0
+}
+
+conf_get() {
+	# conf_get <file> <key>
+	[ -f "$1" ] || return 0
+	sed -n "s/^$2=//p" "$1" | head -n 1
+}
+
+conf_set() {
+	# conf_set <file> <key> <value>
+	local tmp="$1.tmp"
+	[ -f "$1" ] || : > "$1"
+	grep -v "^$2=" "$1" > "$tmp" 2>/dev/null
+	echo "$2=$3" >> "$tmp"
+	mv -f "$tmp" "$1"
+}
+
+storage_save() {
+	[ -x /sbin/mtd_storage.sh ] && /sbin/mtd_storage.sh save >/dev/null 2>&1
+}
+
+plugin_running() {
+	local name="$1" pid
+	[ -f "$RUN_DIR/$name.pid" ] || return 1
+	pid=$(cat "$RUN_DIR/$name.pid" 2>/dev/null)
+	[ -n "$pid" ] || return 1
+	kill -0 "$pid" 2>/dev/null
+}
+
+start_plugin() {
+	local name="$1" dir="$PLUGINS_DIR/$1"
+	[ -f "$dir/main.sh" ] || { log "plugin $name has no main.sh"; return 1; }
+	mkdir -p "$RUN_DIR"
+	if plugin_running "$name"; then
+		log "plugin $name is already running"
+		return 0
+	fi
+	(
+		cd "$dir" || exit 1
+		PLUGIN_NAME="$name" PLUGIN_DIR="$dir" PLUGIN_RUN_DIR="$RUN_DIR" \
+			sh ./main.sh start >> "$RUN_DIR/$name.log" 2>&1
+	) &
+	echo $! > "$RUN_DIR/$name.pid"
+	log "plugin $name started (pid $(cat "$RUN_DIR/$name.pid"))"
+	return 0
+}
+
+stop_plugin() {
+	local name="$1" dir="$PLUGINS_DIR/$1" pid
+	if [ -f "$dir/main.sh" ]; then
+		(
+			cd "$dir" || exit 0
+			PLUGIN_NAME="$name" PLUGIN_DIR="$dir" PLUGIN_RUN_DIR="$RUN_DIR" \
+				sh ./main.sh stop >> "$RUN_DIR/$name.log" 2>&1
+		)
+	fi
+	if [ -f "$RUN_DIR/$name.pid" ]; then
+		pid=$(cat "$RUN_DIR/$name.pid" 2>/dev/null)
+		[ -n "$pid" ] && kill "$pid" 2>/dev/null
+		rm -f "$RUN_DIR/$name.pid"
+	fi
+	log "plugin $name stopped"
+	return 0
+}
+
+cmd_add() {
+	# cmd_add <name> <autostart 0|1> <source script>
+	local name="$1" auto="$2" src="$3" dir
+	valid_name "$name" || { echo "invalid plugin name"; return 1; }
+	[ -f "$src" ] || { echo "missing plugin source"; return 1; }
+
+	dir="$PLUGINS_DIR/$name"
+	mkdir -p "$dir" || return 1
+	cp -f "$src" "$dir/main.sh" || return 1
+	chmod 0755 "$dir/main.sh"
+
+	: > "$dir/plugin.conf"
+	conf_set "$dir/plugin.conf" NAME "$name"
+	conf_set "$dir/plugin.conf" VERSION "1.0"
+	conf_set "$dir/plugin.conf" AUTOSTART "$auto"
+	conf_set "$dir/plugin.conf" INSTALLED "$(date '+%Y-%m-%d %H:%M:%S')"
+
+	mkdir -p "$RUN_DIR"
+	storage_save
+	log "plugin $name installed (autostart=$auto)"
+	echo "installed $name"
+	return 0
+}
+
+cmd_rm() {
+	local name="$1" dir="$PLUGINS_DIR/$1"
+	valid_name "$name" || return 1
+	stop_plugin "$name" >/dev/null 2>&1
+	rm -rf "$dir"
+	rm -f "$RUN_DIR/$name.pid" "$RUN_DIR/$name.log"
+	storage_save
+	log "plugin $name removed"
+	echo "removed $name"
+	return 0
+}
+
+cmd_list() {
+	local dir name auto ver state
+	mkdir -p "$RUN_DIR"
+	for dir in "$PLUGINS_DIR"/*; do
+		[ -d "$dir" ] || continue
+		name=$(basename "$dir")
+		valid_name "$name" || continue
+		auto=$(conf_get "$dir/plugin.conf" AUTOSTART)
+		ver=$(conf_get "$dir/plugin.conf" VERSION)
+		if plugin_running "$name"; then state="running"; else state="stopped"; fi
+		echo "$name|${auto:-0}|${ver:-1.0}|$state"
+	done
+}
+
+cmd_autostart() {
+	local dir name auto
+	for dir in "$PLUGINS_DIR"/*; do
+		[ -d "$dir" ] || continue
+		name=$(basename "$dir")
+		valid_name "$name" || continue
+		auto=$(conf_get "$dir/plugin.conf" AUTOSTART)
+		[ "$auto" = "1" ] || continue
+		start_plugin "$name"
+	done
+	return 0
+}
+
+mkdir -p "$RUN_DIR"
+
+CMD="$1"
+NAME="$2"
+
+case "$CMD" in
+	add)      cmd_add "$2" "$3" "$4" ;;
+	rm)       cmd_rm "$NAME" ;;
+	start)    start_plugin "$NAME" ;;
+	stop)     stop_plugin "$NAME" ;;
+	restart)  stop_plugin "$NAME"; start_plugin "$NAME" ;;
+	enable)   valid_name "$NAME" && conf_set "$PLUGINS_DIR/$NAME/plugin.conf" AUTOSTART 1 && storage_save ;;
+	disable)  valid_name "$NAME" && conf_set "$PLUGINS_DIR/$NAME/plugin.conf" AUTOSTART 0 && storage_save ;;
+	list)     cmd_list ;;
+	autostart) cmd_autostart ;;
+	*)
+		echo "Usage: $0 {list|add <name> <0|1> <file>|rm|start|stop|restart|enable|disable|autostart} [name]"
+		exit 1
+		;;
+esac

@@ -98,6 +98,10 @@ nvram_commit_safe(void)
 void
 sys_reboot(void)
 {
+	/* make sure the pending configuration is written to flash before
+	 * restarting, otherwise settings changed in the WebUI are lost and the
+	 * router comes back up with the previous (stale) network mode */
+	nvram_commit_safe();
 #ifdef MTD_FLASH_32M_REBOOT_BUG
 	doSystem("/sbin/mtd_storage.sh %s", "save");
 	system("/bin/mtd_write -r unlock mtd1");
@@ -2366,6 +2370,85 @@ ej_detect_internet_hook(int eid, webs_t wp, int argc, char **argv)
 }
 
 static int
+plugin_list_hook(int eid, webs_t wp, int argc, char **argv)
+{
+	DIR *dir;
+	struct dirent *de;
+	FILE *fp;
+	char path[192], line[160], name[64], ver[32], auto_start[8];
+	int pid, running, found = 0;
+	const char *p;
+
+#define PLUGIN_RUNTIME_DIR "/etc/storage/plugins"
+
+	websWrite(wp, "<table class=\"table table-condensed\" style=\"margin-bottom:0\">\n");
+	websWrite(wp, "<tr><th>²å¼ş</th><th>°æ±¾</th><th>¿ª»úÆô¶¯</th><th>×´Ì¬</th><th>²Ù×÷</th></tr>\n");
+
+	dir = opendir(PLUGIN_RUNTIME_DIR);
+	while (dir && (de = readdir(dir)) != NULL) {
+		if (de->d_name[0] == '.')
+			continue;
+
+		/* only accept names created by the manager */
+		snprintf(name, sizeof(name), "%s", de->d_name);
+		for (p = name; *p; p++) {
+			if (!isalnum((int)*p) && *p != '_' && *p != '-')
+				break;
+		}
+		if (*p != '\0')
+			continue;
+
+		ver[0] = 0;
+		auto_start[0] = 0;
+		snprintf(path, sizeof(path), PLUGIN_RUNTIME_DIR "/%s/plugin.conf", name);
+		if ((fp = fopen(path, "r")) != NULL) {
+			while (fgets(line, sizeof(line), fp) != NULL) {
+				int len = (int)strlen(line);
+				while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r'))
+					line[--len] = 0;
+				if (!strncmp(line, "VERSION=", 8))
+					snprintf(ver, sizeof(ver), "%s", line + 8);
+				else if (!strncmp(line, "AUTOSTART=", 10))
+					snprintf(auto_start, sizeof(auto_start), "%s", line + 10);
+			}
+			fclose(fp);
+		}
+
+		running = 0;
+		snprintf(path, sizeof(path), "/tmp/plugin/%s.pid", name);
+		if ((fp = fopen(path, "r")) != NULL) {
+			if (fscanf(fp, "%d", &pid) == 1 && pid > 1 && kill(pid, 0) == 0)
+				running = 1;
+			fclose(fp);
+		}
+
+		websWrite(wp,
+			"<tr><td><b>%s</b></td><td>%s</td>"
+			"<td><button type=\"button\" class=\"btn btn-mini\" onclick=\"pluginAction('%s','%s')\">%s</button></td>"
+			"<td>%s</td>"
+			"<td><button type=\"button\" class=\"btn btn-mini\" onclick=\"pluginAction('start','%s')\">Æô¶¯</button> "
+			"<button type=\"button\" class=\"btn btn-mini\" onclick=\"pluginAction('stop','%s')\">Í£Ö¹</button> "
+			"<button type=\"button\" class=\"btn btn-mini btn-danger\" onclick=\"pluginAction('rm','%s')\">É¾³ı</button></td></tr>\n",
+			name, ver[0] ? ver : "1.0",
+			(auto_start[0] == '1') ? "disable" : "enable", name,
+			(auto_start[0] == '1') ? "ÒÑ¿ªÆô" : "ÒÑ¹Ø±Õ",
+			running ? "<span class=\"label label-success\">ÔËĞĞÖĞ</span>" : "<span class=\"label label-warning\">å·²Í£Ö¹</span>",
+			name, name, name);
+		found = 1;
+	}
+	if (dir)
+		closedir(dir);
+
+	websWrite(wp, "</table>\n");
+	if (!found)
+		websWrite(wp, "<div class=\"alert alert-info\" style=\"margin:8px 0 0 0;\">è¿˜æ²¡æœ‰å®‰è£…è¿è¡Œæ—¶²å¼şã€‚ä¸‹é¢å¡«å†™²å¼şåå’Œè„šæœ¬å†…å®¹å³å¯æ·»åŠ ï¼Œæ— éœ€é‡æ–°ç¼–è¯‘å›ºä»¶ã€‚</div>\n");
+
+#undef PLUGIN_RUNTIME_DIR
+
+	return 0;
+}
+
+static int
 wol_action_hook(int eid, webs_t wp, int argc, char **argv) 
 {
 	int i, sys_result;
@@ -3569,6 +3652,42 @@ apply_cgi(const char *url, webs_t wp)
 		doSystem("echo 3 > /proc/sys/vm/drop_caches");
 		return 0;
 	}
+	else if (!strcmp(value, " PluginCmd "))
+	{
+		/* runtime plugin manager: add / start / stop / rm / enable / disable */
+		char *cmd = websGetVar(wp, "plugin_cmd", "");
+		char *name = websGetVar(wp, "plugin_name", "");
+		char *code = websGetVar(wp, "plugin_code", "");
+		char *auto_start = websGetVar(wp, "plugin_autostart", "0");
+		const char *p;
+		int valid = (name && *name && strlen(name) <= 32);
+
+		for (p = name; valid && *p; p++) {
+			if (!isalnum((int)*p) && *p != '_' && *p != '-')
+				valid = 0;
+		}
+
+		if (valid) {
+			if (!strcmp(cmd, "add")) {
+				FILE *fp = fopen("/tmp/plugin-src.sh", "w");
+				if (fp) {
+					if (code)
+						fputs(code, fp);
+					fclose(fp);
+					doSystem("/sbin/plugin-mgr add '%s' '%s' /tmp/plugin-src.sh",
+						name, (auto_start && *auto_start == '1') ? "1" : "0");
+					unlink("/tmp/plugin-src.sh");
+				}
+			}
+			else if (!strcmp(cmd, "start") || !strcmp(cmd, "stop") || !strcmp(cmd, "rm") ||
+					 !strcmp(cmd, "restart") || !strcmp(cmd, "enable") || !strcmp(cmd, "disable")) {
+				doSystem("/sbin/plugin-mgr %s '%s'", cmd, name);
+			}
+		}
+
+		websRedirect(wp, "/Advanced_Scripts_Content.asp");
+		return 0;
+	}
 	else if (!strcmp(value, " RestoreNVRAM "))
 	{
 		websApply(wp, "Restarting.asp");
@@ -4501,6 +4620,7 @@ struct ej_handler ej_handlers[] =
 	{ "lanlink", lanlink_hook},
 	{ "wan_action", wan_action_hook},
 	{ "wol_action", wol_action_hook},
+	{ "plugin_list", plugin_list_hook},
 	{ "nf_values", nf_values_hook},
 	{ "get_parameter", ej_get_parameter},
 	{ "get_nvram_list", ej_get_nvram_list},

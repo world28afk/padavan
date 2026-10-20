@@ -1,0 +1,22 @@
+# Keep line endings stable across Windows / Linux checkouts.
+# Shell scripts MUST be LF, otherwise they fail on the router.
+* text=auto eol=lf
+*.sh text eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.gz binary
+*.xz binary
+*.bz2 binary
+*.zip binary
+*.7z binary
+*.trx binary
+*.bin binary
+*.o binary
+*.a binary
+*.so binary
+*.elf binary

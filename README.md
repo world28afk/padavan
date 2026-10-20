@@ -1,157 +1,114 @@
-# padavan #
+# Padavan for PHICOMM K2P (TurBoTse fork)
 
-This project is based on original rt-n56u with latest mtk 4.4.198 kernel, which is fetch from D-LINK GPL code.
+K2P 可用的 Padavan 4.4 内核固件维护仓库：在原作者 [TurBoTse](https://github.com/TurBoTse) 的
+[TurBoTse/padavan](https://github.com/TurBoTse/padavan) 基础上修复已知问题、增强 WebUI、并新增
+**运行时插件系统**（装好固件后仍然可以在后台加插件，无需重新编译）。
 
-#### Extra functions / changes
-- Adding user/chinadns-ng , and fix shadowsocks + chinadns-ng using local domain whitellist.
-- AP Relay auto-daemon
+- 原作者 / 上游仓库：**TurBoTse** — <https://github.com/TurBoTse/padavan>
+- 更上游：hanwckf/rt-n56u、原始 Padavan (rt-n56u) 项目
+- 许可证：**GNU GPL v2**（见 [LICENSE](LICENSE)，与上游 Padavan 项目一致）
+- 目标设备：PHICOMM K2P / K2P-USB / K2P-NANO（MT7621 + MT7615D），其余 50+ 机型沿用上游板级配置
 
+## 本仓库做了什么
 
-#### SS/SSR
-- Transparent proxy (iptables) wasn't cleaned completely, this issue is fixed.
-- Adding DNSProxy , Local DNS integrated with SS/SSR 
-- Dnsmasq optimization specially for SS/SSR 
-- Resolve DNS pollution - Adding DNS i/p in china-route mode
-- Fast-open option is enabled according to linux version
-##### Enhancements in this repo
+### 1. 问题修复（对应上游 issue）
 
-- commits has beed rewritten on top of [hanwckf/rt-n56u](https://github.com/hanwckf/rt-n56u) repo for better history tracking
-- Optimized Makefiles and build scripts, added a toplevel Makefile
-- Added ccache support, may save up to 50%+ build time
-- Upgraded the toolchain and libc:
-  - gcc 13.3.0
-  - musl 1.2.5 / uClibc-ng 1.0.52
- - OpenWrt style package Makefile
- - Enabled kernel cgroups support
- - Fixed K2P led label names
- - Replaced udpxy with msd_lite
- - Replaced Web Console with ttyd
- - Upgraded libs and user packages
- - And a lot of package related fixes
- - ...
+| Issue | 现象 | 根因 / 修复 |
+| :-- | :-- | :-- |
+| [#15](https://github.com/TurBoTse/padavan/issues/15) k2p 科学上网不能用 | 开启 SS/Xray/Trojan 后无法代理 | K2P 内核配置里 `CONFIG_IP_SET` 被关闭，而 `ss-rules`/`shadowsocks.sh` 全程依赖 `ipset`（`china`、`gfwlist` 集合），`ipset` 命令全部失败导致透明代理链建不起来。已在 `configs/boards/K2P{,-USB}/kernel-4.4.x.config` 打开 IP_SET 全家桶 + `NETFILTER_XT_SET` |
+| [#30](https://github.com/TurBoTse/padavan/issues/30) 网络连接问题 | AP 模式仍下发本机网段；右上角重启 / 系统重置后变成交换机状态、拿到上级路由 IP | ① 重启按钮不落盘 `nvram` 就 reboot，WebUI 里刚改的模式/网络参数丢失 → `sys_reboot()` 前强制 `nvram_commit_safe()`；② DHCP 地址池为空/非法时 dnsmasq 起不来，客户端回落到上级 DHCP → 启动时按 LAN 地址自动修复 `dhcp_start/dhcp_end`，并在 `rc` 里做一次启动自愈重试；③ 按要求移除右上角“关机”按钮 |
+| [#31](https://github.com/TurBoTse/padavan/issues/31) UI 优化 | 功能开关样式不习惯；右上角固件信息看不到原作者和编译时间 | ① `itoggle.js` 改回老毛子的“是 / 否”原生单选框（去掉 iOS 风格图片开关）；② 右上角固件信息新增“原作者（可点击跳转上游仓库）”和“编译时间”，由 `versions.inc` → `cflags.mk` → `common_ex.c` 注入 |
 
-# Features
+### 2. 内网 / 外网 MAC 地址修改 + 随机 MAC
 
-- Based on 4.4.198 Linux kernel
-- Support MT7621 based devices
-- Support MT7615D/MT7615N/MT7915D wireless chips
-- Support raeth and mt7621 hwnat with legency driver
-- Support qca shortcut-fe
-- Support IPv6 NAT based on netfilter
-- Support WireGuard integrated in kernel
-- Support fullcone NAT (by Chion82)
-- Support LED&GPIO control via sysfs
+- 外网 MAC：原本已有（`Advanced_WAN_Content.asp` 的 `wan_hwaddr_x`），保留并新增“随机”按钮。
+- 内网 MAC：新增 `lan_hwaddr_x`（`Advanced_LAN_Content.asp`），留空则使用出厂 MAC；
+  写入后由 `reset_lan_vars()` 在 LAN 重建时套用，`variables.c` 中登记 `EVM_RESTART_LAN` 使保存后立即重建 LAN。
+- 随机按钮由 `general.js: randomMAC()` 生成：6 字节、单播、本地管理位（`xx & 0xFC | 0x02`），
+  12 位大写十六进制，符合 `validate_hwaddr()` 的校验规则。
 
-# Supported devices
-- 360-T6M (from https://github.com/BINGHUAice/padavan-4.4, 没有机器测试，自行判断)
-- B70
-- BELL-A040WQ
-- C-Life-XG1 (from https://github.com/vb1980/padavan-4.4, 没有机器测试，自行判断)
-- CR660x
-- DIR-878
-- DIR-882
-- EA7500 (from https://github.com/MNM28/padavan-4.4, 没有机器测试，自行判断)
-- G-AX1800 (from https://github.com/ddyjyj/padavan-4.4, 富春江G-AX1800, 自测可用)
-- G-AX1800-B (from https://github.com/vb1980/padavan-4.4, 富春江G-AX1800黑色版本, 自测可用, 网口配置和白色版不一样, 4根天线都是ipex可拆, ttl排针焊接好了, 做工比白色版好些)
-- GHL (from https://github.com/fangenhui520/padavan-4.4, 没有机器测试，自行判断)
-- HAR-20S2U1 (from https://github.com/vb1980/padavan-4.4, 没有机器测试，自行判断)
-- JDCloud RE-CP-02 (无线宝鲁班, from https://github.com/240038901/padavan-4.4, 没有机器测试，自行判断)
-- JDCloud RE-SP-01B (from https://github.com/MeIsReallyBa/padavan-4.4, 没有机器测试，自行判断)
-- JCG-836PRO
-- JCG-AC860M
-- JCQ-Q10Pro (from https://github.com/vb1980/padavan-4.4, 没有机器测试，自行判断)
-- JCQ-Q11Pro (from https://github.com/qewwqewq22/padavan11, 没有机器测试，自行判断)
-- JCG-Q20
-- JCG-Y2
-- K2P
-- K2P-USB
-- KOMI-A8 (from https://github.com/vb1980/padavan-4.4, 没有机器测试，自行判断)
-- MI-4
-- MI-R3G
-- MI-R3P
-- MI-R4A (from https://github.com/vipshmily/padavan-4.4, 自测可用)
-- MR2600
-- MSG1500
-- MSG1500-Z (from https://github.com/TurBoTse/padavan, 自测可用)
-- NETGEAR-BZV
-- NETGEAR-R6800 (from https://github.com/MNM28/padavan-4.4, 没有机器测试，自行判断)
-- NETGEAR-R7450 (from https://github.com/vipshmily/padavan-4.4, 自测可用)
-- NEWIFI
-- NEWIFI3 (partially from https://github.com/GH-X/padavan-4.4, 无需拆除C48电容, 没有机器测试，自行判断)
-- QM-B1 (from https://github.com/monw/padavan, 没有机器测试，自行判断)
-- R2100
-- RM2100
-- RT-AC85P
-- SIM-AX1800T (from https://github.com/vb1980/padavan-4.4, 没有机器测试，自行判断)
-- TX1801 Plus (from https://github.com/MNM28/padavan-4.4, 没有机器测试，自行判断)
-- WDR8620 (from https://github.com/fzn0268/padavan-4.4, 没有机器测试，自行判断)
-- WRL18M4GD (from https://github.com/vb1980/padavan-4.4, 没有机器测试，自行判断)
-- WE410443-TC (from https://github.com/akw28888/padavan-4.4, 没有机器测试，自行判断)
-- WIA3300-10 (from https://github.com/vb1980/padavan-4.4, 西加云杉WIA3300-10, 自测可用)
-- WR1200JS
-- XY-C1
-- ZTE-E8820S
-- ZTE-E8820V2
-- ZTT-RX6000(from https://github.com/vb1980/padavan-4.4, 中天科技RX6000的Wifi6运营商机器, ttl刷机简单, 使用R3G分区, r3g breed刷入, 自测可用)
-# Compilation steps
+### 3. 运行时插件系统（无需重新编译固件）
 
-- Install dependencies
-  ```sh
-  # Debian/Ubuntu
-  sudo apt install unzip libtool-bin ccache curl cmake gperf gawk flex bison nano xxd \
-      fakeroot kmod cpio bc zip git python3-docutils gettext automake autopoint \
-      texinfo build-essential help2man pkg-config zlib1g-dev libgmp3-dev \
-      libmpc-dev libmpfr-dev libncurses5-dev libltdl-dev wget libc-dev-bin liblzma-dev
-  ```
-  **Optional:**
-  - install [golang](https://go.dev/doc/install) for building go programs
-    ```sh
-    sudo rm -rf /usr/local/go
-    curl -fsSL https://go.dev/dl/go1.20.10.linux-amd64.tar.gz | sudo tar -C /usr/local -xz
-    echo "export PATH=\$PATH:/usr/local/go/bin" | sudo tee /etc/profile.d/go.sh
-    source /etc/profile.d/go.sh
-    go version
-    ```
-  - install [nodejs](https://nodejs.org/en/download) for building [AdGuardHome](trunk/user/adguardhome)
-    ```sh
-    sudo apt update
-    sudo apt install -y ca-certificates curl gnupg
-    sudo mkdir -p /etc/apt/keyrings
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
-    sudo apt update
-    sudo apt install -y nodejs
-    node -v
-    ```
-- Clone source code
-  ```sh
-  git clone https://github.com/TurBoTse/padavan.git
-  ```
-- Modify template file and start compiling
-  ```sh
-  # (Optional) Modify template file
-  # vi trunk/configs/templates/K2P.config
+上游的插件（ss / xray / frp / smartdns …）都是编译期开关（`CONFIG_FIRMWARE_INCLUDE_*`），
+换插件必须重新编译。本仓库增加了一套运行时插件框架：
 
-  # Start compiling with: make PRODUCT_NAME
-  make K2P
+- 后端：`/sbin/plugin-mgr`（`trunk/user/pluginmgr/`），插件持久化在 `/etc/storage/plugins/<name>/`
+- WebUI：`系统管理 → 自定义脚本` 页面底部新增“运行时插件”面板，可在线添加脚本、启动/停止、删除、开关开机自启
+- 开机自启：`rc` 在服务启动后执行 `plugin-mgr autostart`
+- 插件目录结构：
 
-  # To build firmware for other devices, clean the tree after previous build
-  make clean
-  ```
+```
+/etc/storage/plugins/<name>/
+├── main.sh        # 入口脚本，支持 start / stop（必填，添加插件时由页面写入）
+└── plugin.conf    # NAME= / VERSION= / AUTOSTART=0|1 / INSTALLED=
+```
 
-# Package Development
+`main.sh` 会收到环境变量 `PLUGIN_NAME`、`PLUGIN_DIR`、`PLUGIN_RUN_DIR`，运行日志在
+`/tmp/plugin/<name>.log`，PID 在 `/tmp/plugin/<name>.pid`。
 
-- Makefile examples
-  - [Makefile project](trunk/libs/libpcre/Makefile) 
-  - [CMake project](trunk/user/ttyd/Makefile)
-- Compiling a single package (cd to `trunk` first)
-  - build: `make libs/libpcre_only`
-  - clean: `make libs/libpcre_clean`
-  - romfs: `make libs/libpcre_romfs`
+最小示例：
 
-# Manuals
+```sh
+#!/bin/sh
+case "$1" in
+start)
+    echo hello > /tmp/hello.log
+    ;;
+stop)
+    rm -f /tmp/hello.log
+    ;;
+esac
+```
 
-- Controlling GPIO and LEDs via sysfs
-- How to use NAND RWFS partition
-- How to use IPv6 NAT and fullcone NAT
-- How to add new device support with device tree
+也支持命令行管理：
+
+```sh
+plugin-mgr list
+plugin-mgr add demo 1 /tmp/demo.sh     # 名称 / 是否开机自启 / 脚本路径
+plugin-mgr start demo
+plugin-mgr stop demo
+plugin-mgr enable demo
+plugin-mgr rm demo
+```
+
+> 注意：插件保存在 `/etc/storage`（NVRAM 之外的持久分区），大文件请放到 U 盘 / `/opt`，不要在
+> `/etc/storage` 里塞几十 MB 的东西。
+
+## 编译
+
+依赖（Debian/Ubuntu 22.04）：
+
+```sh
+sudo apt install unzip libtool-bin ccache curl cmake gperf gawk flex bison nano xxd \
+    fakeroot kmod cpio bc zip git python3-docutils gettext automake autopoint \
+    texinfo build-essential help2man pkg-config zlib1g-dev libgmp3-dev \
+    libmpc-dev libmpfr-dev libncurses5-dev libltdl-dev wget libc-dev-bin liblzma-dev
+```
+
+编译：
+
+```sh
+make K2P          # 产物在 trunk/images/*.trx
+make K2P-USB
+make clean        # 换机型前清理
+```
+
+顶层 `Makefile` 会自动下载预编译工具链（`releases/download/toolchain/mipsel-linux-musl.tar.xz`），
+失败时回退到 `toolchain/` 里的 crosstool-NG 源码构建。
+
+GitHub Actions（`.github/workflows/build.yml`）在推送后自动编译 `K2P`、`K2P-USB` 并发布 trx。
+`custom.yml` 支持手动选机型 / 超频 / 插件 JSON。
+
+## 支持的设备
+
+沿用上游 55 个板级配置：K2P、K2P-USB、K2P-NANO、MI-R3G / R3P / 4 / 4A、NEWIFI3、RM2100、CR660x、
+DIR-878/882、JCG 系列、MSG1500、ZTE-E8820S/V2、ZTT-RX6000、NETGEAR R6800/R7450/BZV 等。
+
+## 致谢
+
+- Padavan / rt-n56u 原始项目及其社区
+- [hanwckf/rt-n56u](https://github.com/hanwckf/rt-n56u)
+- **TurBoTse** — 本仓库的上游：[TurBoTse/padavan](https://github.com/TurBoTse/padavan)
+- 各机型适配作者（见 README 历史与 `trunk/configs/boards/`）
+
+刷机有风险，请先备份 breed / 原厂固件，风险自负。

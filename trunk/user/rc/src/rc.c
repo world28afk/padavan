@@ -767,6 +767,13 @@ init_router(void)
 		start_logger(1);
 
 	start_dns_dhcpd(is_ap_mode);
+	/* self-heal: if the DHCP server did not come up (e.g. stale pool after a
+	 * factory reset), retry once so LAN clients do not fall back to an
+	 * upstream DHCP server (#30) */
+	if (!is_ap_mode && nvram_match("dhcp_enable_x", "1") && !is_dns_dhcpd_run()) {
+		sleep(1);
+		start_dns_dhcpd(is_ap_mode);
+	}
 #if defined (APP_SMBD) || defined (APP_NMBD)
 	start_wins();
 #endif
@@ -781,6 +788,10 @@ init_router(void)
 	}
 
 	start_services_once(is_ap_mode);
+
+	/* start runtime plugins installed from the WebUI (persisted in /etc/storage) */
+	if (check_if_file_exist("/sbin/plugin-mgr"))
+		doSystem("/sbin/plugin-mgr autostart >/dev/null 2>&1 &");
 
 	notify_leds_detect_link();
 

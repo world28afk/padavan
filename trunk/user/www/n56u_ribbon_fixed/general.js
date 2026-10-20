@@ -1319,3 +1319,26 @@ function showhide_div(e, sh) {
     else if (document.layers)
         document.layers[e].display = status;
 }
+
+/* ------------------------------------------------------------------
+ * Random MAC generator (used by LAN / WAN MAC fields)
+ * Produces 12 hex characters: locally administered + unicast address,
+ * which is a valid MAC for a network interface.
+ * ------------------------------------------------------------------ */
+function randomMAC(id) {
+    var o = (typeof (id) === 'string') ? (document.getElementsByName(id)[0] || document.getElementById(id)) : id;
+    if (!o)
+        return false;
+    var mac = [];
+    for (var i = 0; i < 6; i++)
+        mac[i] = ('0' + Math.floor(Math.random() * 256).toString(16).toUpperCase()).slice(-2);
+    /* clear the multicast bit, set the locally administered bit */
+    mac[0] = ('0' + ((parseInt(mac[0], 16) & 0xFC) | 0x02).toString(16).toUpperCase()).slice(-2);
+    /* never emit the all-zero address */
+    if (mac.join('') === '000000000000')
+        mac[5] = '01';
+    o.value = mac.join('');
+    if (o.onchange)
+        o.onchange();
+    return true;
+}

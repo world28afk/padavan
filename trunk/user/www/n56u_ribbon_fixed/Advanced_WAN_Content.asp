@@ -1386,7 +1386,8 @@ function simplyMAC(fullMAC){
                                             <th width="50%"><a class="help_tooltip" href="javascript:void(0);" onmouseover="openTooltip(this,7,17);"><#PPPConnection_x_MacAddressForISP_itemname#></a></th>
                                             <td>
                                                 <input type="text" name="wan_hwaddr_x" class="input" style="float: left; margin-right: 5px;" maxlength="12" size="15" value="<% nvram_get_x("","wan_hwaddr_x"); %>" onKeyPress="return is_hwaddr(event);"/>
-                                                <button type="button" class="btn" onclick="showMAC();"><i class="icon icon-plus"></i></button>
+                                                <button type="button" class="btn" onclick="showMAC();" title="<#WANConfig_MACClone_itemname#>"><i class="icon icon-plus"></i></button>
+                                                <button type="button" class="btn" onclick="randomMAC('wan_hwaddr_x');" title="Ëæ»ú MAC"><i class="icon icon-refresh"></i> Ëæ»ú</button>
                                             </td>
                                         </tr>
                                         <tr>

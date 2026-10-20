@@ -76,6 +76,9 @@ function validForm(){
 	var mask_obj = document.form.lan_netmask;
 	var addr_num = inet_network(addr_obj.value);
 
+	if (document.form.lan_hwaddr_x && !validate_hwaddr(document.form.lan_hwaddr_x))
+		return false;
+
 	if(!validate_ipaddr_final(addr_obj, 'lan_ipaddr') ||
 			!validate_ipaddr_final(mask_obj, 'lan_netmask'))
 		return false;
@@ -211,6 +214,14 @@ function done_validating(action){
                                             <th><a class="help_tooltip"  href="javascript:void(0);" onmouseover="openTooltip(this, 4,2);"><#LANHostConfig_SubnetMask_itemname#></a></th>
                                             <td>
                                                 <input type="text" maxlength="15" class="input" size="15" name="lan_netmask" value="<% nvram_get_x("LANHostConfig","lan_netmask"); %>" onkeypress="return is_ipaddr(this,event);" />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>内网 MAC 地址</th>
+                                            <td>
+                                                <input type="text" maxlength="12" class="input" size="15" style="float: left; margin-right: 5px;" name="lan_hwaddr_x" value="<% nvram_get_x("","lan_hwaddr_x"); %>" onKeyPress="return is_hwaddr(event);" />
+                                                <button type="button" class="btn" onclick="randomMAC('lan_hwaddr_x');" title="随机 MAC"><i class="icon icon-refresh"></i> 随机</button>
+                                                <span class="help-block" style="margin-bottom: 0;">留空则使用出厂 MAC，修改后重启生效</span>
                                             </td>
                                         </tr>
                                         <tr>

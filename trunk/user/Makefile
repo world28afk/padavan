@@ -119,6 +119,7 @@ dir_y						+= networkmap
 dir_y						+= httpd
 dir_y						+= www
 dir_y						+= rc
+dir_y						+= pluginmgr
 dir_$(CONFIG_FIRMWARE_INCLUDE_ANTFS)		+= antfs
 dir_y						+= infosvr
 dir_y						+= inadyn

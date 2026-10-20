@@ -363,8 +363,16 @@ function show_banner(L3){
 	bc += '    <td><a href="/Advanced_FirmwareUpgrade_Content.asp"><span id="firmver" class="time"></span></a></td>\n';
 	bc += '  </tr>\n';
 	bc += '  <tr>\n';
+	bc += '    <td>原作者</td>\n';
+	bc += '    <td><a href="https://github.com/TurBoTse/padavan" target="_blank" rel="noopener"><span id="firmorigin" class="time"></span></a></td>\n';
+	bc += '  </tr>\n';
+	bc += '  <tr>\n';
+	bc += '    <td>编译时间</td>\n';
+	bc += '    <td><span id="firmbuild" class="time"></span></td>\n';
+	bc += '  </tr>\n';
+	bc += '  <tr>\n';
 	bc += '    <td><input type="button" class="btn btn-info" value="<#CTL_refresh#>" onclick="parent.location.reload();"> <input type="button" class="btn btn-primary" value="<#CTL_apply#>" onclick="applyRule();"> <button type="button" id="commit_btn" class="btn btn-mini" style="width: 66px; height: 26px; outline:0; '+enabledBtnCommit+'" onclick="commit();"><i class="icon icon-fire"></i>&nbsp;<#CTL_Commit#></button></td>\n';
-	bc += '    <td><button type="button" id="freememory_btn" class="btn btn-mini" style="height: 21px; outline:0;" title="<#BTN_FREEMEMORY#>" onclick="freememory();"><i class="icon icon-trash"></i></button> <button type="button" id="logout_btn" class="btn btn-mini" style="height: 21px; outline:0;" title="<#t1Logout#>" onclick="logout();"><i class="icon icon-user"></i></button> <button type="button" id="reboto_btn" class="btn btn-mini" style="height: 21px; outline:0;" title="<#BTN_REBOOT#>" onclick="reboot();"><i class="icon icon-repeat"></i></button> <button type="button" id="shutdown_btn" class="btn btn-mini" style="margin-left: 15px; height: 21px; outline:0;" title="<#BTN_SHUTDOWN#>" onclick="shutdown();"><i class="icon icon-off"></i></button></td>\n';
+	bc += '    <td><button type="button" id="freememory_btn" class="btn btn-mini" style="height: 21px; outline:0;" title="<#BTN_FREEMEMORY#>" onclick="freememory();"><i class="icon icon-trash"></i></button> <button type="button" id="logout_btn" class="btn btn-mini" style="height: 21px; outline:0;" title="<#t1Logout#>" onclick="logout();"><i class="icon icon-user"></i></button> <button type="button" id="reboto_btn" class="btn btn-mini" style="height: 21px; outline:0;" title="<#BTN_REBOOT#>" onclick="reboot();"><i class="icon icon-repeat"></i></button></td>\n';
 	bc += '  </tr>\n';
 	bc += '</table>\n';
 	bc += '</div>\n';
@@ -765,6 +773,10 @@ function show_top_status(){
 	showSystemInfo({busy: 0, user: 0, nice: 0, system: 0, idle: 0, iowait: 0, irq: 0, sirq: 0}, 0);
 
 	showtext($("firmver"), '<% nvram_get_x("",  "firmver_sub"); %>');
+	if ($("firmorigin").length)
+		showtext($("firmorigin"), '<% nvram_get_x("",  "firmorigin"); %>');
+	if ($("firmbuild").length)
+		showtext($("firmbuild"), '<% nvram_get_x("",  "firmbuild"); %>');
 
 	/*if(sw_mode == "3")
 		$("sw_mode_span").innerHTML = "AP";

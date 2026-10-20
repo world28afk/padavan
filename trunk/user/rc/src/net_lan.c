@@ -553,7 +553,16 @@ reset_lan_temp(void)
 void
 reset_lan_vars(void)
 {
-	nvram_set("lan_hwaddr", nvram_safe_get("il0macaddr"));
+	char mac_buf[32];
+
+	/* honor the user defined LAN MAC (nvram lan_hwaddr_x),
+	 * fall back to the factory MAC when it is empty or invalid */
+	mac_buf[0] = 0;
+	mac_conv("lan_hwaddr_x", -1, mac_buf);
+	if (strlen(mac_buf) == 17)
+		nvram_set("lan_hwaddr", mac_buf);
+	else
+		nvram_set("lan_hwaddr", nvram_safe_get("il0macaddr"));
 }
 
 static void

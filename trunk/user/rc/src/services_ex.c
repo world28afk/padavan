@@ -383,6 +383,21 @@ start_dns_dhcpd(int is_ap_mode)
 	if (i_dhcp_enable) {
 		snprintf(dhcp_start, sizeof(dhcp_start), "%s", nvram_safe_get("dhcp_start"));
 		snprintf(dhcp_end, sizeof(dhcp_end), "%s", nvram_safe_get("dhcp_end"));
+
+		/* repair an empty/invalid pool (e.g. after a factory reset or a
+		 * mode switch): rebuild x.x.x.100 - x.x.x.200 from the LAN address,
+		 * otherwise dnsmasq refuses to start and LAN clients silently fall
+		 * back to an upstream DHCP server */
+		if (strlen(dhcp_start) < 7 || strlen(dhcp_end) < 7) {
+			char *dot = strrchr(ipaddr, '.');
+			if (dot && (dot - ipaddr) > 0 && (dot - ipaddr) < (int)sizeof(dhcp_start) - 5) {
+				int prefix_len = (int)(dot - ipaddr);
+				snprintf(dhcp_start, sizeof(dhcp_start), "%.*s.100", prefix_len, ipaddr);
+				snprintf(dhcp_end, sizeof(dhcp_end), "%.*s.200", prefix_len, ipaddr);
+				nvram_set("dhcp_start", dhcp_start);
+				nvram_set("dhcp_end", dhcp_end);
+			}
+		}
 		
 		if (!chk_valid_subnet_pool(ipaddr, dhcp_start, dhcp_end, netmask)) {
 			nvram_set("dhcp_start", dhcp_start);

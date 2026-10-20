@@ -336,6 +336,17 @@ get_eeprom_params(void)
 	nvram_set_temp("firmver", trim_r(fwver));
 	nvram_set_temp("firmver_sub", trim_r(fwver_sub));
 
+	/* firmware origin (original author / repo) and build time, shown in WebUI */
+#if defined(FWORIGIN_AUTHOR)
+	nvram_set_temp("firmorigin", FWORIGIN_AUTHOR);
+#endif
+#if defined(FWORIGIN_URL)
+	nvram_set_temp("firmorigin_url", FWORIGIN_URL);
+#endif
+#if defined(FWBUILD_TIME)
+	nvram_set_temp("firmbuild", FWBUILD_TIME);
+#endif
+
 #if 0
 #if defined (VENDOR_ASUS)
 	memset(buffer, 0, 4);
