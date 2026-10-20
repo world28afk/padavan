@@ -217,11 +217,11 @@ function done_validating(action){
                                             </td>
                                         </tr>
                                         <tr>
-                                            <th>ÄÚÍø MAC µØÖ·</th>
+                                            <th>å†…ç½‘ MAC åœ°å€</th>
                                             <td>
                                                 <input type="text" maxlength="12" class="input" size="15" style="float: left; margin-right: 5px;" name="lan_hwaddr_x" value="<% nvram_get_x("","lan_hwaddr_x"); %>" onKeyPress="return is_hwaddr(event);" />
-                                                <button type="button" class="btn" onclick="randomMAC('lan_hwaddr_x');" title="Ëæ»ú MAC"><i class="icon icon-refresh"></i> Ëæ»ú</button>
-                                                <span class="help-block" style="margin-bottom: 0;">Áô¿ÕÔòÊ¹ÓÃ³ö³§ MAC£¬ÐÞ¸ÄºóÖØÆôÉúÐ§</span>
+                                                <button type="button" class="btn" onclick="randomMAC('lan_hwaddr_x');" title="éšæœº MAC"><i class="icon icon-refresh"></i> éšæœº</button>
+                                                <span class="help-block" style="margin-bottom: 0;">ç•™ç©ºåˆ™ä½¿ç”¨å‡ºåŽ‚ MACï¼Œä¿®æ”¹åŽé‡å¯ç”Ÿæ•ˆ</span>
                                             </td>
                                         </tr>
                                         <tr>

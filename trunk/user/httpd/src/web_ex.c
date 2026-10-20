@@ -2382,7 +2382,7 @@ plugin_list_hook(int eid, webs_t wp, int argc, char **argv)
 #define PLUGIN_RUNTIME_DIR "/etc/storage/plugins"
 
 	websWrite(wp, "<table class=\"table table-condensed\" style=\"margin-bottom:0\">\n");
-	websWrite(wp, "<tr><th>���</th><th>�汾</th><th>��������</th><th>״̬</th><th>����</th></tr>\n");
+	websWrite(wp, "<tr><th>插件</th><th>版本</th><th>开机启动</th><th>状态</th><th>操作</th></tr>\n");
 
 	dir = opendir(PLUGIN_RUNTIME_DIR);
 	while (dir && (de = readdir(dir)) != NULL) {
@@ -2426,13 +2426,13 @@ plugin_list_hook(int eid, webs_t wp, int argc, char **argv)
 			"<tr><td><b>%s</b></td><td>%s</td>"
 			"<td><button type=\"button\" class=\"btn btn-mini\" onclick=\"pluginAction('%s','%s')\">%s</button></td>"
 			"<td>%s</td>"
-			"<td><button type=\"button\" class=\"btn btn-mini\" onclick=\"pluginAction('start','%s')\">����</button> "
-			"<button type=\"button\" class=\"btn btn-mini\" onclick=\"pluginAction('stop','%s')\">ֹͣ</button> "
-			"<button type=\"button\" class=\"btn btn-mini btn-danger\" onclick=\"pluginAction('rm','%s')\">ɾ��</button></td></tr>\n",
+			"<td><button type=\"button\" class=\"btn btn-mini\" onclick=\"pluginAction('start','%s')\">启动</button> "
+			"<button type=\"button\" class=\"btn btn-mini\" onclick=\"pluginAction('stop','%s')\">停止</button> "
+			"<button type=\"button\" class=\"btn btn-mini btn-danger\" onclick=\"pluginAction('rm','%s')\">删除</button></td></tr>\n",
 			name, ver[0] ? ver : "1.0",
 			(auto_start[0] == '1') ? "disable" : "enable", name,
-			(auto_start[0] == '1') ? "�ѿ���" : "�ѹر�",
-			running ? "<span class=\"label label-success\">������</span>" : "<span class=\"label label-warning\">已ֹͣ</span>",
+			(auto_start[0] == '1') ? "已开启" : "已关闭",
+			running ? "<span class=\"label label-success\">运行中</span>" : "<span class=\"label label-warning\">已停止</span>",
 			name, name, name);
 		found = 1;
 	}
@@ -2441,7 +2441,7 @@ plugin_list_hook(int eid, webs_t wp, int argc, char **argv)
 
 	websWrite(wp, "</table>\n");
 	if (!found)
-		websWrite(wp, "<div class=\"alert alert-info\" style=\"margin:8px 0 0 0;\">还没有安装运行时���。下面填写���名和脚本内容即可添加，无需重新编译固件。</div>\n");
+		websWrite(wp, "<div class=\"alert alert-info\" style=\"margin:8px 0 0 0;\">还没有安装运行时插件。下面填写插件名和脚本内容即可添加，无需重新编译固件。</div>\n");
 
 #undef PLUGIN_RUNTIME_DIR
 

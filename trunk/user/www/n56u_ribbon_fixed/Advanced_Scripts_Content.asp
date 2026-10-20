@@ -58,33 +58,6 @@ function validForm(){
 	return true;
 }
 
-/* --- runtime plugin manager ------------------------------------------ */
-function pluginAction(cmd, name){
-	if (cmd == 'rm' && !confirm('È·¶¨É¾³ı²å¼ş ' + name + ' ?'))
-		return;
-	var f = document.getElementById('pluginForm');
-	f.elements['plugin_cmd'].value = cmd;
-	f.elements['plugin_name'].value = name;
-	f.elements['plugin_code'].value = '';
-	f.submit();
-}
-
-function pluginAdd(){
-	var f = document.getElementById('pluginForm');
-	var n = f.elements['plugin_name'].value;
-	if (!/^[A-Za-z0-9_-]{1,32}$/.test(n)) {
-		alert('²å¼şÃûÖ»ÄÜÊ¹ÓÃ×ÖÄ¸¡¢Êı×Ö¡¢ÏÂ»®ÏßºÍ¼õºÅ (×î¶à 32 ¸ö×Ö·û)');
-		return;
-	}
-	if (!f.elements['plugin_code'].value.replace(/\s/g, '')) {
-		alert('è¯·å¡«å†™²å¼ş½Å±¾å†…å®¹');
-		return;
-	}
-	f.elements['plugin_cmd'].value = 'add';
-	f.elements['plugin_autostart'].value = document.getElementById('plugin_auto').checked ? '1' : '0';
-	f.submit();
-}
-
 function done_validating(action){
 	refreshpage();
 }
@@ -214,43 +187,6 @@ function done_validating(action){
     </div>
 
     </form>
-
-    <div class="container-fluid" style="margin-top: 12px;">
-        <div class="row-fluid">
-            <div class="span12">
-                <div class="box well grad_colour_dark_blue">
-                    <h2 class="box_head round_top">ÔËĞĞÊ±²å¼ş£¨ÎŞĞèÖØĞÂ±àÒë¹Ì¼ş£©</h2>
-                    <div class="round_bottom">
-                        <div class="row-fluid">
-                            <% plugin_list(); %>
-                            <hr>
-                            <form id="pluginForm" method="post" action="/apply.cgi">
-                                <input type="hidden" name="action_mode" value=" PluginCmd ">
-                                <input type="hidden" name="plugin_cmd" value="add">
-                                <input type="hidden" name="plugin_autostart" value="0">
-                                <table width="100%" cellpadding="4" cellspacing="0" class="table">
-                                    <tr>
-                                        <th width="50%" style="border-top: 0 none;">²å¼şÃû³Æ</th>
-                                        <td style="border-top: 0 none;">
-                                            <input type="text" class="input" name="plugin_name" maxlength="32" placeholder="my-plugin" />
-                                            <label class="checkbox inline"><input type="checkbox" id="plugin_auto" /> ¿ª»ú×Ô¶¯Æô¶¯</label>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>²å¼ş½Å±¾<br /><small>å…¥å£ä¸º main.shï¼Œæ”¯æŒ start / stop å‚æ•°ï¼›ä¿å­˜åœ¨ /etc/storage/plugins/&lt;åç§°&gt;/ï¼Œéšå›ºä»¶å­˜å‚¨æŒä¹…åŒ–</small></th>
-                                        <td>
-                                            <textarea name="plugin_code" rows="10" class="span12" spellcheck="false" style="font-family:'Courier New'; font-size:12px;" placeholder="#!/bin/sh&#10;case &quot;$1&quot; in&#10;start)&#10;    echo hello > /tmp/hello.log&#10;    ;;&#10;stop)&#10;    rm -f /tmp/hello.log&#10;    ;;&#10;esac"></textarea>
-                                        </td>
-                                    </tr>
-                                </table>
-                                <center><button type="button" class="btn btn-primary" style="width: 219px" onclick="pluginAdd();">Ìí¼Ó²å¼ş</button></center>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <div id="footer"></div>
 </div>

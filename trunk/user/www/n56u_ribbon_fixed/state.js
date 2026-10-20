@@ -363,11 +363,11 @@ function show_banner(L3){
 	bc += '    <td><a href="/Advanced_FirmwareUpgrade_Content.asp"><span id="firmver" class="time"></span></a></td>\n';
 	bc += '  </tr>\n';
 	bc += '  <tr>\n';
-	bc += '    <td>Ô­×÷Õß</td>\n';
+	bc += '    <td>åŸä½œè€…</td>\n';
 	bc += '    <td><a href="https://github.com/TurBoTse/padavan" target="_blank" rel="noopener"><span id="firmorigin" class="time"></span></a></td>\n';
 	bc += '  </tr>\n';
 	bc += '  <tr>\n';
-	bc += '    <td>±àÒëÊ±¼ä</td>\n';
+	bc += '    <td>ç¼–è¯‘æ—¶é—´</td>\n';
 	bc += '    <td><span id="firmbuild" class="time"></span></td>\n';
 	bc += '  </tr>\n';
 	bc += '  <tr>\n';
@@ -399,7 +399,7 @@ tabtitle[3] = new Array("", "<#menu5_3_1#>", "<#menu5_3_3#>", "<#menu5_3_4#>", "
 tabtitle[4] = new Array("", "<#menu5_5_1#>", "<#menu5_5_5#>", "<#menu5_5_2#>", "<#menu5_5_3#>", "<#menu5_5_4#>");
 tabtitle[5] = new Array("", "<#menu5_4_3#>", "<#menu5_4_1#>", "<#menu5_4_2#>", "<#menu5_4_4#>", "<#menu5_4_5#>");
 tabtitle[6] = new Array("", "<#menu5_6_2#>", "<#menu5_6_5#>", "<#menu5_6_1#>", "<#menu5_6_3#>", "<#menu5_6_4#>", "<#menu5_6_6#>");
-tabtitle[7] = new Array("", "<#menu5_10_1#>", "<#menu5_10_2#>", "<#menu5_10_3#>");
+tabtitle[7] = new Array("", "<#menu5_10_1#>", "<#menu5_10_2#>", "<#menu5_10_3#>", "æ’ä»¶ç®¡ç†");
 tabtitle[8] = new Array("", "<#menu5_11#>", "<#menu5_12#>", "WAN", "", "", "", "", "", "", "");
 tabtitle[9] = new Array("", "<#menu5_7_2#>", "<#menu5_7_3#>", "<#menu5_7_5#>", "<#menu5_7_6#>", "<#menu5_7_8#>");
 if (found_app_scutclient()){
@@ -443,7 +443,7 @@ tablink[3] = new Array("", "Advanced_WAN_Content.asp", "Advanced_IPv6_Content.as
 tablink[4] = new Array("", "Advanced_BasicFirewall_Content.asp", "Advanced_Netfilter_Content.asp", "Advanced_URLFilter_Content.asp", "Advanced_MACFilter_Content.asp", "Advanced_Firewall_Content.asp");
 tablink[5] = new Array("", "Advanced_AiDisk_others.asp", "Advanced_AiDisk_samba.asp", "Advanced_AiDisk_ftp.asp", "Advanced_Modem_others.asp", "Advanced_Printer_others.asp");
 tablink[6] = new Array("", "Advanced_System_Content.asp", "Advanced_Services_Content.asp", "Advanced_OperationMode_Content.asp", "Advanced_FirmwareUpgrade_Content.asp", "Advanced_SettingBackup_Content.asp", "Advanced_Console_Content.asp");
-tablink[7] = new Array("", "Advanced_Tweaks_Content.asp", "Advanced_Scripts_Content.asp", "Advanced_InetDetect_Content.asp");
+tablink[7] = new Array("", "Advanced_Tweaks_Content.asp", "Advanced_Scripts_Content.asp", "Advanced_InetDetect_Content.asp", "Advanced_Plugin_Content.asp");
 tablink[8] = new Array("", "Main_WStatus2g_Content.asp", "Main_WStatus_Content.asp", "", "", "", "", "", "", "", "");
 tablink[9] = new Array("", "Main_LogStatus_Content.asp", "Main_DHCPStatus_Content.asp", "Main_IPTStatus_Content.asp", "Main_RouteStatus_Content.asp", "Main_CTStatus_Content.asp");
 if (found_app_scutclient()){
@@ -748,7 +748,7 @@ function show_footer(){
 	footer_code = '<div align="center" class="bottom-image"></div>\n';
 	footer_code +='<div align="center" class="copyright"><#footer_copyright_desc#></div>\n';
 	footer_code +='<div align="center">\n';
-	footer_code +='  <span>Developed by Â© <a href="https://bitbucket.org/padavan/rt-n56u/">Andy Padavan</a> &amp; <a href="https://github.com/hanwckf/padavan-4.4">hanwckf</a> &amp; <a href="https://github.com/MeIsReallyBa/padavan-4.4">MeIsReallyBa</a> &amp; <a href="https://github.com/tsl0922/padavan">tsl0922</a> &amp; <a href="https://github.com/TurBoTse/padavan">TurBoTse</a></span></br>\n';
+	footer_code +='  <span>Developed by Â© <a href="https://bitbucket.org/padavan/rt-n56u/">Andy Padavan</a> &amp; <a href="https://github.com/hanwckf/padavan-4.4">hanwckf</a> &amp; <a href="https://github.com/MeIsReallyBa/padavan-4.4">MeIsReallyBa</a> &amp; <a href="https://github.com/tsl0922/padavan">tsl0922</a> &amp; <a href="https://github.com/TurBoTse/padavan">TurBoTse</a> &amp; <a href="https://github.com/world28afk/padavan">world28</a></span></br>\n';
 	footer_code +='  <span>Firmware distribution is prohibited , Non-Commercial Use Only</span></br>\n';
 	footer_code +='</div>\n';
 
