@@ -1368,32 +1368,18 @@ gen_ralink_config(int is_soc_ap, int is_aband, int disable_autoscan)
 		
 		if (i_phy_mode == PHY_11VHT_N_A_MIXED || i_phy_mode == PHY_11VHT_N_MIXED || i_phy_mode == PHY_11AX_5G)
 			i_VHTBW_MAX = 1;
-		//VHT_BW  (0:20MHz, 1:40MHz, 2:80MHz, 3:160MHz)
+		//VHT_BW
 		i_val = nvram_wlan_get_int(is_aband, "HT_BW");
-		if (i_val > 3) i_val = 3;
 #if (USE_WID_5G==7615 && !defined (BOARD_MT7615_DBDC)) || (USE_WID_5G==7915 && !defined (BOARD_MT7915_DBDC))
-		/* 160MHz is not usable on this configuration, fall back to 80MHz */
-		if (i_val == 3)
-			i_val = 2;
+		if (i_val == 3) //160Mhz
+			fprintf(fp, "VHT_BW=%d\n", 2);
+		else
 #endif
-#if defined (BOARD_MT7615_DBDC) || defined (BOARD_MT7915_DBDC)
-		/* DBDC splits both bands on the same chip: 160MHz is impossible */
-		if (i_val > 2)
-			i_val = 2;
-#endif
-		if (i_HTBW_MAX == 0 || i_VHTBW_MAX == 0) i_val = 0;
-#if defined (BOARD_MT7615_DBDC) || defined (BOARD_MT7915_DBDC)
-		/* In DBDC mode the driver parses VHT_BW as a per-wdev list
-		 * ("2.4G;5G", see cmm_profile.c).  A single value only reaches the
-		 * first wdev, which left the 5G wdev at its 40MHz default. */
 		{
-			int bw_2g = nvram_wlan_get_int(0, "HT_BW");
-			if (bw_2g > 1) bw_2g = 1;
-			fprintf(fp, "VHT_BW=%d;%d\n", bw_2g, i_val);
+			i_val = (i_val > 1) ? 1 : 0;
+			if (i_HTBW_MAX == 0 || i_VHTBW_MAX == 0) i_val = 0;
+			fprintf(fp, "VHT_BW=%d\n", i_val);
 		}
-#else
-		fprintf(fp, "VHT_BW=%d\n", i_val);
-#endif
 		
 		//VHT_SGI
 		fprintf(fp, "VHT_SGI=%d\n", 1);
