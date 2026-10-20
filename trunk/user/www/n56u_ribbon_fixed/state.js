@@ -362,10 +362,7 @@ function show_banner(L3){
 	bc += '    <td><#General_x_FirmwareVersion_itemname#></td>\n';
 	bc += '    <td><a href="/Advanced_FirmwareUpgrade_Content.asp"><span id="firmver" class="time"></span></a></td>\n';
 	bc += '  </tr>\n';
-	bc += '  <tr>\n';
-	bc += '    <td>固件作者</td>\n';
-	bc += '    <td><a href="https://github.com/world28afk/padavan" target="_blank" rel="noopener">world28</a></td>\n';
-	bc += '  </tr>\n';
+
 	bc += '  <tr>\n';
 	bc += '    <td><input type="button" class="btn btn-info" value="<#CTL_refresh#>" onclick="parent.location.reload();"> <input type="button" class="btn btn-primary" value="<#CTL_apply#>" onclick="applyRule();"> <button type="button" id="commit_btn" class="btn btn-mini" style="width: 66px; height: 26px; outline:0; '+enabledBtnCommit+'" onclick="commit();"><i class="icon icon-fire"></i>&nbsp;<#CTL_Commit#></button></td>\n';
 	bc += '    <td><button type="button" id="freememory_btn" class="btn btn-mini" style="height: 21px; outline:0;" title="<#BTN_FREEMEMORY#>" onclick="freememory();"><i class="icon icon-trash"></i></button> <button type="button" id="logout_btn" class="btn btn-mini" style="height: 21px; outline:0;" title="<#t1Logout#>" onclick="logout();"><i class="icon icon-user"></i></button> <button type="button" id="reboto_btn" class="btn btn-mini" style="height: 21px; outline:0;" title="<#BTN_REBOOT#>" onclick="reboot();"><i class="icon icon-repeat"></i></button></td>\n';
@@ -744,7 +741,7 @@ function show_footer(){
 	footer_code = '<div align="center" class="bottom-image"></div>\n';
 	footer_code +='<div align="center" class="copyright"><#footer_copyright_desc#></div>\n';
 	footer_code +='<div align="center">\n';
-	footer_code +='  <span>Developed by © <a href="https://bitbucket.org/padavan/rt-n56u/">Andy Padavan</a> &amp; <a href="https://github.com/hanwckf/padavan-4.4">hanwckf</a> &amp; <a href="https://github.com/MeIsReallyBa/padavan-4.4">MeIsReallyBa</a> &amp; <a href="https://github.com/tsl0922/padavan">tsl0922</a> &amp; <a href="https://github.com/TurBoTse/padavan">TurBoTse</a></span></br>\n';
+	footer_code +='  <span>Developed by © <a href="https://bitbucket.org/padavan/rt-n56u/">Andy Padavan</a> &amp; <a href="https://github.com/hanwckf/padavan-4.4">hanwckf</a> &amp; <a href="https://github.com/MeIsReallyBa/padavan-4.4">MeIsReallyBa</a> &amp; <a href="https://github.com/tsl0922/padavan">tsl0922</a> &amp; <a href="https://github.com/TurBoTse/padavan">TurBoTse</a> &amp; <a href="https://github.com/world28afk/padavan">world28</a></span></br>\n';
 	footer_code +='  <span>Firmware distribution is prohibited , Non-Commercial Use Only</span></br>\n';
 	footer_code +='</div>\n';
 
