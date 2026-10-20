@@ -594,8 +594,8 @@ if (found_app_frp()){
 } else menuL2_link.push("");
 
 // 运行时插件（与系统管理同级）
-tabtitle[20] = new Array("", "插件管理");
-tablink[20]  = new Array("", "Advanced_Plugin_Content.asp");
+tabtitle[20] = new Array("", "插件管理", "Mihomo");
+tablink[20]  = new Array("", "Advanced_Plugin_Content.asp", "Advanced_Mihomo_Content.asp");
 menuL2_title.push("插件管理");
 menuL2_link.push("Advanced_Plugin_Content.asp");
 
