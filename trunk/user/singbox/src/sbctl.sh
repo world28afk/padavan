@@ -22,7 +22,7 @@ TPROXY_PORT=7894
 DNS_PORT=1053
 
 CORE_URL=$(nvram get sb_core_url)
-[ -n "$CORE_URL" ] || CORE_URL="https://github.com/SagerNet/sing-box/releases/download/v1.10.7/sing-box-1.10.7-linux-mipsle-softfloat.tar.gz"
+[ -n "$CORE_URL" ] || CORE_URL="https://github.com/yandexru45/sing-box-extended-lite/releases/latest/download/sing-box-extended-lite-linux-mipsle-softfloat.tar.gz"
 
 log() {
 	logger -t singbox "$@" 2>/dev/null
@@ -38,8 +38,8 @@ is_running() {
 
 ensure_tmp() {
 	mkdir -p "$RUN"
-	# sing-box needs ~45MB, default /tmp is 24MB
-	mount -o remount,size=72M /tmp 2>/dev/null
+	# extended-lite mipsle binary is ~15MB (stock builds are ~40MB), default /tmp is 24MB
+	mount -o remount,size=48M /tmp 2>/dev/null
 }
 
 fetch_core() {

@@ -239,7 +239,7 @@ function sbToast(msg){
                                         <input type="text" id="sb_core_url" class="form-control" style="flex:1;min-width:260px;" value="<% nvram_get_x("","sb_core_url"); %>" placeholder="sing-box mipsle 内核下载地址" />
                                         <button type="button" class="btn btn-small" onclick="sbSaveCore();">保存地址</button>
                                     </div>
-                                    <div class="sb-hint">默认 <span id="sb_core_view">https://github.com/SagerNet/sing-box/releases/download/v1.10.7/sing-box-1.10.7-linux-mipsle-softfloat.tar.gz</span>；内核解压后约 40MB，运行时放在 /tmp（tmpfs 72MB）。</div>
+                                    <div class="sb-hint">默认 <span id="sb_core_view">https://github.com/yandexru45/sing-box-extended-lite/releases/latest/download/sing-box-extended-lite-linux-mipsle-softfloat.tar.gz</span>；内核约 15MB（extended-lite），运行时放在 /tmp（tmpfs 48MB）。</div>
                                 </div>
                             </div>
                         </form>
