@@ -182,9 +182,6 @@ endif
 ifneq ($(CONFIG_FIRMWARE_INCLUDE_SQM),y)
 	rm -f $(INSTALLDIR)/www/Advanced_SQM.asp
 endif
-ifneq ($(CONFIG_FIRMWARE_INCLUDE_SMARTDNS),y)
-	rm -f $(INSTALLDIR)/www/Advanced_smartdns.asp
-endif
 ifneq ($(CONFIG_FIRMWARE_INCLUDE_SOFTETHERVPN_SERVER),y)
 	rm -f $(INSTALLDIR)/www/vpnsrv.asp
 endif

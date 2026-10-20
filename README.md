@@ -15,6 +15,8 @@
 
 - Linux 4.4 内核，MT7621 硬件 NAT（`CONFIG_RA_NAT_HW`）与 SFE 快转
 - 网关 / 纯路由 / AP 三种工作模式，IPv6、WireGuard、fullcone NAT 沿用上游能力
+- DNS 由 dnsmasq 提供，上游 DNS / 本地域名 / DHCP 选项均在 WebUI 中直接配置，
+  不包含 SmartDNS、AdGuardHome 等附加组件
 - 重启前自动落盘 nvram，避免配置丢失
 - DHCP 地址池异常时自动按 LAN 网段修复，并在启动阶段自愈重试
 
