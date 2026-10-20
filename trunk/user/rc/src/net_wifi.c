@@ -32,6 +32,27 @@
 #include "gpio_pins.h"
 #include <gpioutils.h>
 
+static void
+wifi_apply_bandwidth(const char *wifname, int is_aband)
+{
+	int bw = nvram_wlan_get_int(is_aband, "HT_BW");
+
+	if (is_aband) {
+		/* 0:20MHz 1:40MHz 2:80MHz 3:160MHz */
+		if (bw > 3)
+			bw = 3;
+#if defined (BOARD_MT7615_DBDC) || defined (BOARD_MT7915_DBDC)
+		if (bw > 2)
+			bw = 2;
+#endif
+		doSystem("iwpriv %s set VhtBw=%d", wifname, bw);
+	} else {
+		if (bw > 1)
+			bw = 1;
+		doSystem("iwpriv %s set HtBw=%d", wifname, bw);
+	}
+}
+
 static int
 wif_control(const char *wifname, int is_up)
 {
@@ -43,6 +64,17 @@ wif_control(const char *wifname, int is_up)
 		doSystem("iwpriv %s set hw_nat_register=%d", wifname, 1);
 	}
 #endif
+
+	/* make sure the configured channel width is really applied at runtime:
+	 * the profile parser only hands VHT_BW to the first wdev in DBDC mode,
+	 * so a 80MHz setting could silently end up as 40MHz */
+	if (is_up) {
+		if (!strcmp(wifname, IFNAME_5G_MAIN))
+			wifi_apply_bandwidth(wifname, 1);
+		else if (!strcmp(wifname, IFNAME_2G_MAIN))
+			wifi_apply_bandwidth(wifname, 0);
+	}
+
 	return ret;
 }
 

@@ -363,8 +363,8 @@ function show_banner(L3){
 	bc += '    <td><a href="/Advanced_FirmwareUpgrade_Content.asp"><span id="firmver" class="time"></span></a></td>\n';
 	bc += '  </tr>\n';
 	bc += '  <tr>\n';
-	bc += '    <td>原作者</td>\n';
-	bc += '    <td><a href="https://github.com/TurBoTse/padavan" target="_blank" rel="noopener"><span id="firmorigin" class="time"></span></a></td>\n';
+	bc += '    <td>固件作者</td>\n';
+	bc += '    <td><a href="https://github.com/world28afk/padavan" target="_blank" rel="noopener"><span id="firmorigin" class="time"></span></a></td>\n';
 	bc += '  </tr>\n';
 	bc += '  <tr>\n';
 	bc += '    <td>编译时间</td>\n';
