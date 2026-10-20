@@ -52,7 +52,12 @@ fetch_url() {
 			-o "$out" "$url" >> "$LOG" 2>&1; then
 			return 0
 		fi
-		log "curl failed: $url"
+		log "curl failed (tls/ca?), retrying with -k: $url"
+		if curl -fkL --connect-timeout 20 --retry 2 --retry-delay 2 \
+			-o "$out" "$url" >> "$LOG" 2>&1; then
+			return 0
+		fi
+		log "curl -k failed: $url"
 	fi
 
 	if command -v wget >/dev/null 2>&1; then
