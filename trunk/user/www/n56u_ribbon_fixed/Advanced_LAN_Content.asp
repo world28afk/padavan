@@ -79,6 +79,19 @@ function validForm(){
 	if (document.form.lan_hwaddr_x && !validate_hwaddr(document.form.lan_hwaddr_x))
 		return false;
 
+	/* 组播地址（首字节为奇数）不能作为网卡 MAC，否则交换机会把它当广播泛洪 */
+	if (document.form.lan_hwaddr_x && document.form.lan_hwaddr_x.value.length == 12) {
+		var b0 = parseInt(document.form.lan_hwaddr_x.value.substr(0, 2), 16);
+		if (b0 & 1) {
+			alert('这个地址是组播地址（第一字节为奇数），不能作为网卡 MAC，请点「随机」或改用偶数开头的地址');
+			return false;
+		}
+		if (b0 == 0 && document.form.lan_hwaddr_x.value == '000000000000') {
+			alert('全零地址不能作为 MAC');
+			return false;
+		}
+	}
+
 	if(!validate_ipaddr_final(addr_obj, 'lan_ipaddr') ||
 			!validate_ipaddr_final(mask_obj, 'lan_netmask'))
 		return false;
@@ -221,7 +234,7 @@ function done_validating(action){
                                             <td>
                                                 <input type="text" maxlength="12" class="input" size="15" style="float: left; margin-right: 5px;" name="lan_hwaddr_x" value="<% nvram_get_x("","lan_hwaddr_x"); %>" onKeyPress="return is_hwaddr(event);" />
                                                 <button type="button" class="btn" onclick="randomMAC('lan_hwaddr_x');" title="随机 MAC"><i class="icon icon-refresh"></i> 随机</button>
-                                                <span class="help-block" style="margin-bottom: 0;">留空则使用出厂 MAC，修改后重启生效</span>
+                                                <span class="help-block" style="margin-bottom: 0;">留空则使用出厂 MAC；必须是单播地址（首字节为偶数），不要和局域网内其他设备重复</span>
                                             </td>
                                         </tr>
                                         <tr>

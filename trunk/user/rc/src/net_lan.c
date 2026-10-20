@@ -22,6 +22,7 @@
 #include <syslog.h>
 #include <ctype.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/stat.h>
@@ -550,19 +551,65 @@ reset_lan_temp(void)
 	nvram_set_temp("lan_dns_t", "");
 }
 
+static int
+mac_hex_val(char c)
+{
+	if (c >= '0' && c <= '9') return c - '0';
+	if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+	if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+	return -1;
+}
+
+/* A LAN interface MAC must be a valid unicast address: the multicast bit
+ * (0x01 of the first octet) makes every frame a group frame, the switch
+ * floods it and the whole LAN becomes sluggish. All-zero is equally bad. */
+static int
+lan_mac_is_valid(const char *mac)
+{
+	int i, b0, nonzero = 0;
+
+	if (!mac || strlen(mac) != 17)
+		return 0;
+
+	b0 = mac_hex_val(mac[0]);
+	if (b0 < 0 || mac_hex_val(mac[1]) < 0)
+		return 0;
+	b0 = b0 * 16 + mac_hex_val(mac[1]);
+	if (b0 & 0x01)
+		return 0;
+	if (b0 > 0)
+		nonzero = 1;
+
+	for (i = 2; i < 17; i++) {
+		if (mac[i] == ':')
+			continue;
+		if (mac_hex_val(mac[i]) < 0)
+			return 0;
+		if (mac[i] != '0')
+			nonzero = 1;
+	}
+
+	return nonzero;
+}
+
 void
 reset_lan_vars(void)
 {
 	char mac_buf[32];
+	const char *wan_mac;
 
-	/* honor the user defined LAN MAC (nvram lan_hwaddr_x),
-	 * fall back to the factory MAC when it is empty or invalid */
 	mac_buf[0] = 0;
 	mac_conv("lan_hwaddr_x", -1, mac_buf);
-	if (strlen(mac_buf) == 17)
+	wan_mac = nvram_safe_get("il1macaddr");
+
+	if (lan_mac_is_valid(mac_buf) && strcasecmp(mac_buf, wan_mac) != 0) {
 		nvram_set("lan_hwaddr", mac_buf);
-	else
+		logmessage(LOGNAME, "LAN MAC set from lan_hwaddr_x: %s", mac_buf);
+	} else {
+		if (strlen(mac_buf) == 17)
+			logmessage(LOGNAME, "lan_hwaddr_x %s rejected (multicast/zero/same as WAN), using factory MAC", mac_buf);
 		nvram_set("lan_hwaddr", nvram_safe_get("il0macaddr"));
+	}
 }
 
 static void
@@ -726,6 +773,10 @@ full_restart_lan(void)
 	phy_ports_lan_power(1);
 
 	start_lan(is_ap_mode, 1);
+
+	/* the br0 MAC may have changed: drop stale neighbour entries so clients
+	 * and the router re-ARP immediately instead of talking to the old address */
+	doSystem("ip neigh flush all 2>/dev/null");
 
 	/* start logger if remote */
 	if (log_remote)
