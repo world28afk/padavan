@@ -2370,89 +2370,6 @@ ej_detect_internet_hook(int eid, webs_t wp, int argc, char **argv)
 }
 
 static int
-proxy_status_hook(int eid, webs_t wp, int argc, char **argv)
-{
-	FILE *fp;
-	int pid = 0;
-	struct stat st;
-	long cfg_size = 0;
-	char ver[64] = "-";
-
-	if (stat("/etc/storage/singbox/config.json", &st) == 0)
-		cfg_size = (long)st.st_size;
-
-	fp = fopen("/tmp/singbox/singbox.pid", "r");
-	if (fp) {
-		if (fscanf(fp, "%d", &pid) != 1)
-			pid = 0;
-		fclose(fp);
-	}
-
-	if (pid > 1 && kill(pid, 0) == 0)
-		websWrite(wp, "running");
-	else
-		websWrite(wp, "stopped");
-
-	websWrite(wp, "|%ld|%s", cfg_size, ver);
-	return 0;
-}
-
-static int
-proxy_conf_hook(int eid, webs_t wp, int argc, char **argv)
-{
-	FILE *fp;
-	char buf[512];
-	int n = 0;
-
-	fp = fopen("/etc/storage/singbox/config.json", "r");
-	if (!fp)
-		return 0;
-
-	while (fgets(buf, sizeof(buf), fp) != NULL && n < (192 * 1024)) {
-		char *p;
-		for (p = buf; *p; p++) {
-			if (*p == '<') { fputs("&lt;", wp); n += 4; }
-			else if (*p == '>') { fputs("&gt;", wp); n += 4; }
-			else if (*p == '&') { fputs("&amp;", wp); n += 5; }
-			else { fputc(*p, wp); n++; }
-		}
-	}
-	fclose(fp);
-	return 0;
-}
-
-static int
-proxy_log_hook(int eid, webs_t wp, int argc, char **argv)
-{
-	FILE *fp;
-	char buf[512];
-	long size, pos;
-
-	fp = fopen("/tmp/singbox/singbox.log", "r");
-	if (!fp) {
-		websWrite(wp, "（暂无日志）");
-		return 0;
-	}
-
-	fseek(fp, 0, SEEK_END);
-	size = ftell(fp);
-	pos = (size > 8192) ? size - 8192 : 0;
-	fseek(fp, pos, SEEK_SET);
-
-	while (fgets(buf, sizeof(buf), fp) != NULL) {
-		char *p;
-		for (p = buf; *p; p++) {
-			if (*p == '<') fputs("&lt;", wp);
-			else if (*p == '>') fputs("&gt;", wp);
-			else if (*p == '&') fputs("&amp;", wp);
-			else fputc(*p, wp);
-		}
-	}
-	fclose(fp);
-	return 0;
-}
-
-static int
 plugin_list_hook(int eid, webs_t wp, int argc, char **argv)
 {
 	DIR *dir;
@@ -3771,54 +3688,6 @@ apply_cgi(const char *url, webs_t wp)
 		websRedirect(wp, "/Advanced_Scripts_Content.asp");
 		return 0;
 	}
-	else if (!strcmp(value, " ProxyCmd "))
-	{
-		char *cmd = websGetVar(wp, "proxy_cmd", "");
-		char *cfg = websGetVar(wp, "proxy_cfg", "");
-		char *url = websGetVar(wp, "proxy_url", "");
-		char *core = websGetVar(wp, "proxy_core", "");
-		const char *p;
-
-		doSystem("mkdir -p /etc/storage/singbox");
-
-		if (!strcmp(cmd, "save") || !strcmp(cmd, "save_start")) {
-			FILE *fp = fopen("/etc/storage/singbox/config.json", "w");
-			if (fp) {
-				if (cfg)
-					fputs(cfg, fp);
-				fclose(fp);
-			}
-			doSystem("/sbin/mtd_storage.sh save >/dev/null 2>&1");
-			if (!strcmp(cmd, "save_start"))
-				doSystem("/usr/bin/sbctl.sh apply >/dev/null 2>&1 &");
-		}
-		else if (!strcmp(cmd, "sub")) {
-			int valid = (url && !strncmp(url, "http", 4) && strlen(url) < 1024);
-			for (p = url; valid && *p; p++) {
-				if (*p == '\'' || *p == '"' || *p == ';' || *p == '`' ||
-				    *p == '$' || *p == ' ' || *p == '\n' || *p == '\r')
-					valid = 0;
-			}
-			if (valid) {
-				doSystem("wget -q -O /tmp/sb_sub.json '%s' && mv -f /tmp/sb_sub.json /etc/storage/singbox/config.json", url);
-				doSystem("chmod 600 /etc/storage/singbox/config.json");
-				doSystem("/sbin/mtd_storage.sh save >/dev/null 2>&1");
-			}
-		}
-		else if (!strcmp(cmd, "coreurl")) {
-			if (core && !strncmp(core, "http", 4) && strlen(core) < 512) {
-				nvram_set("sb_core_url", core);
-				nvram_commit();
-			}
-		}
-		else if (!strcmp(cmd, "start") || !strcmp(cmd, "stop") || !strcmp(cmd, "restart") ||
-				 !strcmp(cmd, "apply") || !strcmp(cmd, "update-core")) {
-			doSystem("/usr/bin/sbctl.sh %s >/dev/null 2>&1 &", cmd);
-		}
-
-		websRedirect(wp, "/Advanced_Proxy_Content.asp");
-		return 0;
-	}
 	else if (!strcmp(value, " RestoreNVRAM "))
 	{
 		websApply(wp, "Restarting.asp");
@@ -4752,9 +4621,6 @@ struct ej_handler ej_handlers[] =
 	{ "wan_action", wan_action_hook},
 	{ "wol_action", wol_action_hook},
 	{ "plugin_list", plugin_list_hook},
-	{ "proxy_status", proxy_status_hook},
-	{ "proxy_conf", proxy_conf_hook},
-	{ "proxy_log", proxy_log_hook},
 	{ "nf_values", nf_values_hook},
 	{ "get_parameter", ej_get_parameter},
 	{ "get_nvram_list", ej_get_nvram_list},

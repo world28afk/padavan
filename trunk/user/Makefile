@@ -122,7 +122,6 @@ dir_y						+= httpd
 dir_y						+= www
 dir_y						+= rc
 dir_y						+= pluginmgr
-dir_y						+= singbox
 dir_$(CONFIG_FIRMWARE_INCLUDE_ANTFS)		+= antfs
 dir_y						+= infosvr
 dir_y						+= inadyn
