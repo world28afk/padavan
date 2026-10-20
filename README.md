@@ -19,6 +19,11 @@ K2P 可用的 Padavan 4.4 内核固件维护仓库：在原作者 [TurBoTse](htt
 | [#30](https://github.com/TurBoTse/padavan/issues/30) 网络连接问题 | AP 模式仍下发本机网段；右上角重启 / 系统重置后变成交换机状态、拿到上级路由 IP | ① 重启按钮不落盘 `nvram` 就 reboot，WebUI 里刚改的模式/网络参数丢失 → `sys_reboot()` 前强制 `nvram_commit_safe()`；② DHCP 地址池为空/非法时 dnsmasq 起不来，客户端回落到上级 DHCP → 启动时按 LAN 地址自动修复 `dhcp_start/dhcp_end`，并在 `rc` 里做一次启动自愈重试；③ 按要求移除右上角“关机”按钮 |
 | [#31](https://github.com/TurBoTse/padavan/issues/31) UI 优化 | 功能开关样式不习惯；右上角固件信息看不到原作者和编译时间 | ① `itoggle.js` 改回老毛子的“是 / 否”原生单选框（去掉 iOS 风格图片开关）；② 右上角固件信息新增“原作者（可点击跳转上游仓库）”和“编译时间”，由 `versions.inc` → `cflags.mk` → `common_ex.c` 注入 |
 
+> **代理内核现状（2026-10 基线）**：按要求已整体移除原「科学上网」栈 ——
+> shadowsocks-libev / shadowsocksr-libev / Xray / v2ray / Trojan / sing-box / naiveproxy /
+> simple-obfs / ipt2socks / chinadns-ng / chnroute / dns2tcp / dnsproxy / redsocks / xTun / wing /
+> resolveip / skipdbv2，以及对应的 WebUI 页面、菜单项和 rc 钩子（`APP_SHADOWSOCKS`）。
+> 内核侧保留 `IP_SET`/`NETFILTER_XT_SET` 能力，便于后续重新实现代理模块。
 ### 2. 内网 / 外网 MAC 地址修改 + 随机 MAC
 
 - 外网 MAC：原本已有（`Advanced_WAN_Content.asp` 的 `wan_hwaddr_x`），保留并新增“随机”按钮。
