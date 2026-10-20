@@ -234,7 +234,7 @@ function done_validating(action){
                                             <td>
                                                 <input type="text" maxlength="12" class="input" size="15" style="float: left; margin-right: 5px;" name="lan_hwaddr_x" value="<% nvram_get_x("","lan_hwaddr_x"); %>" onKeyPress="return is_hwaddr(event);" />
                                                 <button type="button" class="btn" onclick="randomMAC('lan_hwaddr_x');" title="随机 MAC"><i class="icon icon-refresh"></i> 随机</button>
-                                                <span class="help-block" style="margin-bottom: 0;">留空则使用出厂 MAC；必须是单播地址（首字节为偶数），不要和局域网内其他设备重复</span>
+                                                <span class="help-block" style="margin-bottom: 0;">留空则使用出厂 MAC；必须是单播地址（首字节为偶数）。修改后路由器会重启，使新 MAC 在交换机和无线侧完整生效</span>
                                             </td>
                                         </tr>
                                         <tr>
