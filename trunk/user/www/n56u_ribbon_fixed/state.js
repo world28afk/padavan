@@ -593,11 +593,13 @@ if (found_app_frp()){
 	menuL2_link.push(frp_array[1]);
 } else menuL2_link.push("");
 
-// 运行时插件（与系统管理同级）
-tabtitle[20] = new Array("", "插件管理", "Mihomo");
-tablink[20]  = new Array("", "Advanced_Plugin_Content.asp", "Advanced_Mihomo_Content.asp");
-menuL2_title.push("插件管理");
-menuL2_link.push("Advanced_Plugin_Content.asp");
+// 运行时插件：占用一个未启用的二级菜单槽位（scutclient），保持数组长度不变
+if (!found_app_scutclient()) {
+	tabtitle[10] = new Array("", "插件管理", "Mihomo");
+	tablink[10]  = new Array("", "Advanced_Plugin_Content.asp", "Advanced_Mihomo_Content.asp");
+	menuL2_title[11] = "插件管理";
+	menuL2_link[11]  = "Advanced_Plugin_Content.asp";
+}
 
 //Level 1 Menu in Gateway, Router mode
 menuL1_title = new Array("", "<#menu1#>", "", "<#menu2#>", "<#menu6#>", "<#menu4#>", "<#menu5_8#>", "<#menu5#>");

@@ -23,7 +23,7 @@ var mihomo_state = "<% mihomo_status(); %>";
 
 function initial(){
 	show_banner(1);
-	try { show_menu(5,21,2); } catch (e) { show_menu(5,8,1); }
+	try { show_menu(5,11,2); } catch (e) { show_menu(5,8,1); }
 	show_footer();
 
 	var parts = mihomo_state.split("|");
