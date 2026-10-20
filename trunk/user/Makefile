@@ -23,6 +23,10 @@ INSTALLDIR = $(ROOTDIR)/romfs
 BOARD_CONFIG = $(ROOTDIR)/user/boards.mk
 CFLAGS_CONFIG = $(ROOTDIR)/user/cflags.mk
 
+# Load board descriptors early: BOARD_NUM_USB_PORTS decides whether storage
+# (USB/HDD) support and the whole USB section of the WebUI make sense at all.
+-include $(BOARD_CONFIG)
+
 DROPBEAR_ENABLED=n
 FRP_ENABLE=n
 FS_EXT_ENABLED=n
@@ -56,6 +60,12 @@ endif
 
 ifdef CONFIG_MMC_BLOCK
 STORAGE_ENABLED=y
+endif
+
+# Boards without any USB/SD port (e.g. plain K2P) must not ship the USB stack,
+# the storage pages nor the USB menu entry.
+ifeq ($(BOARD_NUM_USB_PORTS),0)
+STORAGE_ENABLED=n
 endif
 
 ifeq ($(STORAGE_ENABLED),y)
