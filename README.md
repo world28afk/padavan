@@ -1,71 +1,61 @@
-# Padavan for PHICOMM K2P (TurBoTse fork)
+# Padavan for PHICOMM K2P
 
-K2P 可用的 Padavan 4.4 内核固件维护仓库：在原作者 [TurBoTse](https://github.com/TurBoTse) 的
-[TurBoTse/padavan](https://github.com/TurBoTse/padavan) 基础上修复已知问题、增强 WebUI、并新增
-**运行时插件系统**（装好固件后仍然可以在后台加插件，无需重新编译）。
+基于 [TurBoTse/padavan](https://github.com/TurBoTse/padavan) 维护的 Padavan 4.4 内核固件仓库，
+面向 MT7621 平台的 PHICOMM K2P 系列路由器（K2P / K2P-USB / K2P-NANO），
+在保留上游构建体系与板级适配的前提下，提供更精简的功能集与更完整的运行时可扩展能力。
 
-- 原作者 / 上游仓库：**TurBoTse** — <https://github.com/TurBoTse/padavan>
-- 更上游：hanwckf/rt-n56u、原始 Padavan (rt-n56u) 项目
-- 许可证：**GNU GPL v2**（见 [LICENSE](LICENSE)，与上游 Padavan 项目一致）
-- 目标设备：PHICOMM K2P / K2P-USB / K2P-NANO（MT7621 + MT7615D），其余 50+ 机型沿用上游板级配置
+- 上游项目：**TurBoTse** — <https://github.com/TurBoTse/padavan>
+- 更上游：hanwckf/rt-n56u、原始 Padavan（rt-n56u）项目
+- 许可证：**GNU GPL v2**（见 [LICENSE](LICENSE)）
+- 目标平台：MT7621 + MT7615D / MT7915D，16MB flash，128MB 内存
 
-## 本仓库做了什么
+## 功能概览
 
-### 1. 问题修复（对应上游 issue）
+### 系统与网络
 
-| Issue | 现象 | 根因 / 修复 |
-| :-- | :-- | :-- |
-| [#15](https://github.com/TurBoTse/padavan/issues/15) k2p 科学上网不能用 | 开启 SS/Xray/Trojan 后无法代理 | K2P 内核配置里 `CONFIG_IP_SET` 被关闭，而 `ss-rules`/`shadowsocks.sh` 全程依赖 `ipset`（`china`、`gfwlist` 集合），`ipset` 命令全部失败导致透明代理链建不起来。已在 `configs/boards/K2P{,-USB}/kernel-4.4.x.config` 打开 IP_SET 全家桶 + `NETFILTER_XT_SET` |
-| [#30](https://github.com/TurBoTse/padavan/issues/30) 网络连接问题 | AP 模式仍下发本机网段；右上角重启 / 系统重置后变成交换机状态、拿到上级路由 IP | ① 重启按钮不落盘 `nvram` 就 reboot，WebUI 里刚改的模式/网络参数丢失 → `sys_reboot()` 前强制 `nvram_commit_safe()`；② DHCP 地址池为空/非法时 dnsmasq 起不来，客户端回落到上级 DHCP → 启动时按 LAN 地址自动修复 `dhcp_start/dhcp_end`，并在 `rc` 里做一次启动自愈重试；③ 按要求移除右上角“关机”按钮 |
-| [#31](https://github.com/TurBoTse/padavan/issues/31) UI 优化 | 功能开关样式不习惯；右上角固件信息看不到原作者和编译时间 | ① `itoggle.js` 改回老毛子的“是 / 否”原生单选框（去掉 iOS 风格图片开关）；② 右上角固件信息新增“原作者（可点击跳转上游仓库）”和“编译时间”，由 `versions.inc` → `cflags.mk` → `common_ex.c` 注入 |
+- Linux 4.4 内核，MT7621 硬件 NAT（`CONFIG_RA_NAT_HW`）与 SFE 快转
+- 网关 / 纯路由 / AP 三种工作模式，IPv6、WireGuard、fullcone NAT 沿用上游能力
+- 重启前自动落盘 nvram，避免配置丢失
+- DHCP 地址池异常时自动按 LAN 网段修复，并在启动阶段自愈重试
 
-> **代理内核现状（2026-10 基线）**：按要求已整体移除原「科学上网」栈 ——
-> shadowsocks-libev / shadowsocksr-libev / Xray / v2ray / Trojan / sing-box / naiveproxy /
-> simple-obfs / ipt2socks / chinadns-ng / chnroute / dns2tcp / dnsproxy / redsocks / xTun / wing /
-> resolveip / skipdbv2，以及对应的 WebUI 页面、菜单项和 rc 钩子（`APP_SHADOWSOCKS`）。
-> 内核侧保留 `IP_SET`/`NETFILTER_XT_SET` 能力，便于后续重新实现代理模块。
-### 2. 内网 / 外网 MAC 地址修改 + 随机 MAC
+### 无线
 
-- 外网 MAC：原本已有（`Advanced_WAN_Content.asp` 的 `wan_hwaddr_x`），保留并新增“随机”按钮。
-- 内网 MAC：新增 `lan_hwaddr_x`（`Advanced_LAN_Content.asp`），留空则使用出厂 MAC；
-  写入后由 `reset_lan_vars()` 在 LAN 重建时套用，`variables.c` 中登记 `EVM_RESTART_LAN` 使保存后立即重建 LAN。
-- 随机按钮由 `general.js: randomMAC()` 生成：6 字节、单播、本地管理位（`xx & 0xFC | 0x02`），
-  12 位大写十六进制，符合 `validate_hwaddr()` 的校验规则。
+- 2.4G / 5G 双频，MT7615 DBDC，支持 2x2 MIMO、802.11ac
+- 无线参数完全沿用上游实现，未做额外改写
+- WebUI 提供信道、带宽、发射功率、访客网络、WDS、MAC 过滤等常用配置
 
-### 3. 运行时插件系统（无需重新编译固件）
+### MAC 地址管理
 
-上游的插件（ss / xray / frp / smartdns …）都是编译期开关（`CONFIG_FIRMWARE_INCLUDE_*`），
-换插件必须重新编译。本仓库增加了一套运行时插件框架：
+- **外网 MAC**：`高级设置 → 外部网络` 中修改，支持从客户端列表选择
+- **内网 MAC**：`高级设置 → 内部网络` 中修改，留空则使用出厂 MAC
+- 两处均提供**随机生成**按钮，生成符合规范的地址（单播、本地管理位、12 位十六进制），
+  保存后立即生效
 
-- 后端：`/sbin/plugin-mgr`（`trunk/user/pluginmgr/`），插件持久化在 `/etc/storage/plugins/<name>/`
-- WebUI：左侧「高级设置 → 插件管理」（与「系统管理」同级）新增插件面板，可在线添加脚本、启动/停止、删除、开关开机自启
-- 开机自启：`rc` 在服务启动后执行 `plugin-mgr autostart`
-- 插件目录结构：
+### WebUI
+
+- 顶栏展示负载、内存、运行时间、无线状态与固件版本
+- 功能开关使用经典「是 / 否」单选按钮，风格与原版 Padavan 一致
+- 页脚保留项目致谢与固件来源
+
+### 运行时插件系统
+
+固件内的功能通过编译期开关裁剪，插件则在设备运行期间安装，无需重新编译固件：
+
+- 管理器：`/sbin/plugin-mgr`
+- 存储位置：`/etc/storage/plugins/<name>/`（持久分区，重启保留）
+- 入口脚本：`main.sh`，支持 `start` / `stop` 参数
+- WebUI：`高级设置 → 系统管理 → 插件管理`，支持在线添加、启动、停止、删除、开机自启
+- 开机时由 `rc` 调用 `plugin-mgr autostart` 拉起已启用的插件
+
+目录结构：
 
 ```
 /etc/storage/plugins/<name>/
-├── main.sh        # 入口脚本，支持 start / stop（必填，添加插件时由页面写入）
-└── plugin.conf    # NAME= / VERSION= / AUTOSTART=0|1 / INSTALLED=
+├── main.sh        # 入口脚本（start / stop）
+└── plugin.conf    # NAME / VERSION / AUTOSTART / INSTALLED
 ```
 
-`main.sh` 会收到环境变量 `PLUGIN_NAME`、`PLUGIN_DIR`、`PLUGIN_RUN_DIR`，运行日志在
-`/tmp/plugin/<name>.log`，PID 在 `/tmp/plugin/<name>.pid`。
-
-最小示例：
-
-```sh
-#!/bin/sh
-case "$1" in
-start)
-    echo hello > /tmp/hello.log
-    ;;
-stop)
-    rm -f /tmp/hello.log
-    ;;
-esac
-```
-
-也支持命令行管理：
+命令行同样可用：
 
 ```sh
 plugin-mgr list
@@ -76,39 +66,18 @@ plugin-mgr enable demo
 plugin-mgr rm demo
 ```
 
-> 注意：插件保存在 `/etc/storage`（NVRAM 之外的持久分区），大文件请放到 U 盘 / `/opt`，不要在
-> `/etc/storage` 里塞几十 MB 的东西。
+### 关于代理功能
 
-### 4. 5GHz 跑不满（80MHz 被降成 40MHz）
+本仓库发布的是**不含任何代理内核**的基线固件：shadowsocks、Xray、Trojan、sing-box、
+naiveproxy 及相关 DNS 组件均不编入，WebUI 也不提供对应入口。如此可让固件保持在
+16MB flash 的可用范围内，并把运行内存留给路由与插件。
 
-`trunk/user/rc/src/ralink.c` 在生成 `/etc/Wireless/iNIC/iNIC_ap.dat` 时，把 WebUI 的
-`wl_HT_BW`（0=20M / 1=40M / 2=80M / 3=160M）写入驱动 `VHT_BW` 时做了一次错误钳位：
-
-```c
-/* 修复前：80MHz(2) 被压成 40MHz(1) */
-i_val = (i_val > 1) ? 1 : 0;
-fprintf(fp, "VHT_BW=%d\n", i_val);
-```
-
-K2P 是 `BOARD_MT7615_DBDC`，于是无论怎么选 80MHz，驱动拿到的都是 `VHT_BW=1`（VHT40 = 300Mbps PHY），
-这正好对应“靠近路由 5G 也只有 300Mbps”；有线走 MT7621 硬件 NAT 所以能跑满 900Mbps+。
-
-修复后按 0/1/2/3 原样下发，DBDC 芯片最高 80MHz，非 DBDC 但驱动不支持 160MHz 的平台仍回落到 80MHz。
-
-刷机后自查：
-
-```sh
-grep -E '^(HT_BW|VHT_BW)=' /etc/Wireless/iNIC/iNIC_ap.dat   # 5G 应为 VHT_BW=2
-iwpriv rai0 get HtBw ; iwpriv rai0 get VhtBw                   # 运行时确认
-```
-
-另外 5G 想跑到 400Mbps+ 还需要：频道选 149/153/157/161（80MHz）、带宽选 20/40/80、加密用 AES
-（TKIP 会掉到 54Mbps）、客户端本身是 2x2 11ac。MT7621 没有 WED，无线转发仍是 CPU 转发，
-2x2 80MHz 的实测上限大约 450~550Mbps。
+内核侧仍保留 `IP_SET`、`NETFILTER_XT_SET`、`XT_TPROXY`、`XT_REDIRECT` 等能力，
+需要时可以通过插件形式在 `/etc/storage` 或外置存储上部署独立的代理组件。
 
 ## 编译
 
-依赖（Debian/Ubuntu 22.04）：
+依赖（Debian / Ubuntu 22.04 及以上）：
 
 ```sh
 sudo apt install unzip libtool-bin ccache curl cmake gperf gawk flex bison nano xxd \
@@ -117,30 +86,62 @@ sudo apt install unzip libtool-bin ccache curl cmake gperf gawk flex bison nano 
     libmpc-dev libmpfr-dev libncurses5-dev libltdl-dev wget libc-dev-bin liblzma-dev
 ```
 
-编译：
+编译指定机型：
 
 ```sh
-make K2P          # 产物在 trunk/images/*.trx
+make K2P          # 产物位于 trunk/images/*.trx
 make K2P-USB
-make clean        # 换机型前清理
+make clean        # 切换机型前清理
 ```
 
-顶层 `Makefile` 会自动下载预编译工具链（`releases/download/toolchain/mipsel-linux-musl.tar.xz`），
-失败时回退到 `toolchain/` 里的 crosstool-NG 源码构建。
+顶层 `Makefile` 会自动下载预编译工具链
+（`releases/download/toolchain/mipsel-linux-musl.tar.xz`），下载失败时回退到
+`toolchain/` 内的 crosstool-NG 源码构建。
 
-GitHub Actions（`.github/workflows/build.yml`）在推送后自动编译 `K2P`、`K2P-USB` 并发布 trx。
-`custom.yml` 支持手动选机型 / 超频 / 插件 JSON。
+持续集成：
 
-## 支持的设备
+- `.github/workflows/build.yml`：推送到任意分支后自动编译 `K2P`、`K2P-USB` 并发布 trx
+- `.github/workflows/custom.yml`：手动选择机型、超频档位与插件开关
+- `.github/workflows/toolchain.yml`：工具链单独构建与发布
 
-沿用上游 55 个板级配置：K2P、K2P-USB、K2P-NANO、MI-R3G / R3P / 4 / 4A、NEWIFI3、RM2100、CR660x、
-DIR-878/882、JCG 系列、MSG1500、ZTE-E8820S/V2、ZTT-RX6000、NETGEAR R6800/R7450/BZV 等。
+## 目录结构
+
+```
+Makefile                 顶层构建入口（make <机型>）
+toolchain/               crosstool-NG 源码
+trunk/
+  Makefile              固件主构建流程
+  configure             生成 .config 与内核配置
+  linux-4.4.x/          内核及 MTK/Ralink 驱动
+  libc/ libs/           运行库与第三方库
+  user/                 用户态软件包（含 pluginmgr）
+  vendors/Ralink/       镜像打包规则
+  configs/templates/    各机型功能模板
+  configs/boards/       板级描述、内核配置、SKU 数据
+  tools/                lzma、mkimage、mksquashfs、romfs 工具
+.github/workflows/      CI 工作流
+```
+
+## 刷机
+
+1. 已运行 Padavan 的设备：`高级设置 → 系统管理 → 固件升级`，选择对应机型的 `.trx` 上传即可，
+   配置默认保留
+2. 原厂固件首次刷入：需要先通过 Breed 或其他方式写入引导
+3. 固件分区容量为 15.19MiB（`0x50000` 起 `0xF30000`），上传文件超过该容量会被拒绝
+
+刷机存在风险，请提前备份原厂固件与 Breed。
+
+## 支持机型
+
+沿用上游 55 个板级配置，包括：K2P、K2P-USB、K2P-NANO、MI-R3G / R3P / 4 / 4A、NEWIFI3、
+RM2100、CR660x、DIR-878 / 882、JCG 系列、MSG1500、ZTE-E8820S / V2、ZTT-RX6000、
+NETGEAR R6800 / R7450 / BZV 等。各机型的适配来源见 `trunk/configs/boards/` 与上游提交记录。
 
 ## 致谢
 
-- Padavan / rt-n56u 原始项目及其社区
+- Padavan（rt-n56u）原始项目及其社区
 - [hanwckf/rt-n56u](https://github.com/hanwckf/rt-n56u)
-- **TurBoTse** — 本仓库的上游：[TurBoTse/padavan](https://github.com/TurBoTse/padavan)
-- 各机型适配作者（见 README 历史与 `trunk/configs/boards/`）
+- [TurBoTse/padavan](https://github.com/TurBoTse/padavan) — 本仓库的直接上游
+- 各机型的板级适配作者
 
-刷机有风险，请先备份 breed / 原厂固件，风险自负。
+固件按 GPL-2.0 分发，仅供个人学习与自用，请遵守当地法律法规。
