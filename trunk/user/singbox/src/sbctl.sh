@@ -2,9 +2,8 @@
 #
 # sbctl.sh - sing-box runtime manager for Padavan (K2P / mipsel)
 #
-# The sing-box core does not fit into the 16MB firmware flash, so it is
-# fetched into /tmp (tmpfs) on demand, while the configuration lives in
-# /etc/storage/singbox (persistent).
+# The core does not fit into the 16MB firmware flash, so it is fetched into
+# /tmp (tmpfs) on demand, while the configuration lives in /etc/storage/singbox.
 #
 # usage: sbctl.sh start|stop|restart|status|update-core|apply
 #
@@ -23,6 +22,7 @@ DNS_PORT=1053
 
 CORE_URL=$(nvram get sb_core_url)
 [ -n "$CORE_URL" ] || CORE_URL="https://github.com/yandexru45/sing-box-extended-lite/releases/latest/download/sing-box-extended-lite-linux-mipsle-softfloat.tar.gz"
+CORE_URL2="https://ghfast.top/https://github.com/yandexru45/sing-box-extended-lite/releases/latest/download/sing-box-extended-lite-linux-mipsle-softfloat.tar.gz"
 
 log() {
 	logger -t singbox "$@" 2>/dev/null
@@ -42,23 +42,52 @@ ensure_tmp() {
 	mount -o remount,size=48M /tmp 2>/dev/null
 }
 
+# Padavan's busybox wget is often built without TLS, curl is the safe choice.
+fetch_url() {
+	url="$1"
+	out="$2"
+
+	if command -v curl >/dev/null 2>&1; then
+		if curl -fL --connect-timeout 20 --retry 2 --retry-delay 2 \
+			-o "$out" "$url" >> "$LOG" 2>&1; then
+			return 0
+		fi
+		log "curl failed: $url"
+	fi
+
+	if command -v wget >/dev/null 2>&1; then
+		if wget -q --no-check-certificate -O "$out" "$url" >> "$LOG" 2>&1; then
+			return 0
+		fi
+		log "wget failed: $url"
+	fi
+
+	return 1
+}
+
 fetch_core() {
 	[ -x "$BIN" ] && return 0
 	ensure_tmp
-	log "downloading core: $CORE_URL"
 	rm -f /tmp/sb.tar.gz
-	if ! wget -q -O /tmp/sb.tar.gz "$CORE_URL"; then
-		log "core download failed"
-		return 1
-	fi
+
+	for u in "$CORE_URL" "$CORE_URL2"; do
+		log "downloading core: $u"
+		if fetch_url "$u" /tmp/sb.tar.gz && [ -s /tmp/sb.tar.gz ]; then
+			break
+		fi
+		rm -f /tmp/sb.tar.gz
+	done
+
+	[ -s /tmp/sb.tar.gz ] || { log "core download failed (check DNS / https reachability)"; return 1; }
+
 	rm -rf /tmp/sb_extract && mkdir -p /tmp/sb_extract
-	tar -xzf /tmp/sb.tar.gz -C /tmp/sb_extract 2>/dev/null || { log "extract failed"; return 1; }
+	tar -xzf /tmp/sb.tar.gz -C /tmp/sb_extract 2>>"$LOG" || { log "extract failed (tar/gzip?)"; return 1; }
 	bin=$(find /tmp/sb_extract -type f -name 'sing-box' | head -n 1)
 	[ -n "$bin" ] || { log "binary not found in archive"; return 1; }
 	cp -f "$bin" "$BIN"
 	chmod 755 "$BIN"
 	rm -rf /tmp/sb_extract /tmp/sb.tar.gz
-	log "core ready: $(ls -l "$BIN" | awk '{print $5}') bytes, $($BIN version 2>/dev/null | head -n1)"
+	log "core ready: $(ls -l "$BIN" | awk '{print $5}') bytes, $("$BIN" version 2>/dev/null | head -n1)"
 	return 0
 }
 

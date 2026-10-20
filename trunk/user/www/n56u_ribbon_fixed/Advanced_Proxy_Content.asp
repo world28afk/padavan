@@ -11,28 +11,6 @@
 <link rel="stylesheet" type="text/css" href="/bootstrap/css/bootstrap.min.css">
 <link rel="stylesheet" type="text/css" href="/bootstrap/css/main.css">
 
-<style>
-.sb-card{border:0;border-radius:10px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.08);margin-bottom:14px;overflow:hidden}
-.sb-card>.hd{padding:10px 16px;background:linear-gradient(90deg,#1f6feb,#3b82f6);color:#fff;font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px}
-.sb-card>.bd{padding:14px 16px}
-.sb-status{display:flex;align-items:center;flex-wrap:wrap;gap:14px}
-.sb-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px}
-.sb-dot.on{background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.18)}
-.sb-dot.off{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.18)}
-.sb-meta{color:#64748b;font-size:12px}
-.sb-toolbar{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
-.sb-toolbar .btn{border-radius:8px}
-.sb-editor{width:100%;min-height:300px;font-family:Consolas,'Courier New',monospace;font-size:12px;line-height:1.5;border:1px solid #e2e8f0;border-radius:8px;padding:10px;background:#0f172a;color:#e2e8f0}
-.sb-log{max-height:240px;overflow:auto;background:#0f172a;color:#cbd5e1;font-family:Consolas,monospace;font-size:12px;border-radius:8px;padding:10px;white-space:pre-wrap}
-.sb-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
-.sb-row .form-control{border-radius:8px}
-.sb-hint{color:#94a3b8;font-size:12px;margin-top:6px}
-.sb-badge{border-radius:999px;padding:4px 12px;font-size:12px;font-weight:600}
-.sb-badge.on{background:#dcfce7;color:#166534}
-.sb-badge.off{background:#fef3c7;color:#92400e}
-.sb-pill{background:#f1f5f9;border-radius:999px;padding:4px 10px;font-size:12px;color:#475569}
-</style>
-
 <script type="text/javascript" src="/jquery.js"></script>
 <script type="text/javascript" src="/state.js"></script>
 <script type="text/javascript" src="/general.js"></script>
@@ -55,18 +33,16 @@ function initial(){
 	var size = parseInt(p[1] || "0", 10);
 
 	var badge = document.getElementById("sb_badge");
-	badge.className = "sb-badge " + (running ? "on" : "off");
+	badge.className = "label " + (running ? "label-success" : "label-warning");
 	badge.innerHTML = running ? "运行中" : "已停止";
 
-	document.getElementById("sb_dot").className = "sb-dot " + (running ? "on" : "off");
 	document.getElementById("sb_size").innerHTML = size ? (size + " 字节") : "未配置";
-
 }
 
 function sbSubmit(cmd){
 	if (cmd == "stop" && !confirm("停止后所有设备将直连，确定？"))
 		return;
-	if (cmd == "update-core" && !confirm("重新下载内核（约 10-20MB），确定？"))
+	if (cmd == "update-core" && !confirm("重新下载内核（约 15MB），确定？"))
 		return;
 	showLoading();
 	var f = document.getElementById("sb_form");
@@ -82,26 +58,20 @@ function sbLoadFile(input){
 	if (file.size > 1024 * 1024) { alert("配置文件过大（上限 1MB）"); return; }
 
 	var reader = new FileReader();
-	reader.onload = function(e){
-		var text = e.target.result;
-		sbApplyText(text, file.name);
-	};
+	reader.onload = function(e){ sbApplyText(e.target.result, file.name); };
 	reader.readAsText(file);
 }
 
 function sbApplyText(text, name){
 	var ta = document.getElementById("sb_cfg");
-	var trimmed = text.replace(/^\s+/, "");
-
-	if (trimmed.charAt(0) == "{") {
+	if (text.replace(/^\s+/, "").charAt(0) == "{") {
 		ta.value = text;
-		sbToast("已载入 sing-box 配置：" + (name || "粘贴内容"));
+		alert("已载入 sing-box 配置：" + (name || "粘贴内容"));
 		return;
 	}
-
 	try {
 		ta.value = convertClashToSingbox(text, sbMode());
-		sbToast("已把 Clash 订阅转换为 sing-box 配置（" + (name || "粘贴内容") + "）");
+		alert("已把 Clash 订阅转换为 sing-box 配置（" + (name || "粘贴内容") + "），确认后点「保存并应用」");
 	} catch (err) {
 		alert("转换失败：" + err.message);
 	}
@@ -127,13 +97,6 @@ function sbSaveCore(){
 	f.submit();
 }
 
-function sbToast(msg){
-	var t = document.getElementById("sb_toast");
-	t.innerHTML = msg;
-	t.style.display = "block";
-	setTimeout(function(){ t.style.display = "none"; }, 4000);
-}
-
 </script>
 </head>
 
@@ -154,6 +117,7 @@ function sbToast(msg){
     <div class="container-fluid">
         <div class="row-fluid">
             <div class="span3">
+                <!--Sidebar content-->
                 <div class="well sidebar-nav side_nav" style="padding: 0px;">
                     <ul id="mainMenu" class="clearfix"></ul>
                     <ul class="clearfix">
@@ -163,98 +127,111 @@ function sbToast(msg){
             </div>
 
             <div class="span9">
+                <!--Body content-->
                 <div class="row-fluid">
                     <div class="span12">
-                        <div id="tabMenu" class="submenuBlock"></div>
+                        <div class="box well grad_colour_dark_blue">
+                            <h2 class="box_head round_top"><#menu5_10#> - 科学上网</h2>
+                            <div class="round_bottom">
+                                <div class="row-fluid">
+                                    <div id="tabMenu" class="submenuBlock"></div>
 
-                        <div id="sb_toast" class="alert alert-success" style="display:none;margin:10px 0;"></div>
+                                    <form id="sb_form" method="post" action="/apply.cgi">
+                                    <input type="hidden" name="action_mode" value=" ProxyCmd ">
+                                    <input type="hidden" name="proxy_cmd" value="">
+                                    <input type="hidden" name="proxy_url" value="">
+                                    <input type="hidden" name="proxy_core" value="">
 
-                        <form id="sb_form" method="post" action="/apply.cgi">
-                            <input type="hidden" name="action_mode" value=" ProxyCmd ">
-                            <input type="hidden" name="proxy_cmd" value="">
-                            <input type="hidden" name="proxy_url" value="">
-                            <input type="hidden" name="proxy_core" value="">
+                                    <table width="100%" cellpadding="4" cellspacing="0" class="table">
+                                        <tr><th colspan="2" style="background-color: #E3E3E3;">运行状态</th></tr>
+                                        <tr>
+                                            <th width="50%" style="border-top: 0 none;">sing-box</th>
+                                            <td style="border-top: 0 none;">
+                                                <span id="sb_badge" class="label">读取中…</span>
+                                                &nbsp;&nbsp;配置：<span id="sb_size">-</span>
+                                                <div class="form-inline" style="margin-top: 8px;">
+                                                    <button type="button" class="btn btn-small btn-primary" onclick="sbSubmit('start');">启动</button>
+                                                    <button type="button" class="btn btn-small" onclick="sbSubmit('stop');">停止</button>
+                                                    <button type="button" class="btn btn-small" onclick="sbSubmit('restart');">重启</button>
+                                                    <button type="button" class="btn btn-small" onclick="sbSubmit('update-core');">更新内核</button>
+                                                    <button type="button" class="btn btn-small" onclick="location.href='/Advanced_Proxy_Content.asp';">刷新</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>代理端口</th>
+                                            <td>HTTP/SOCKS 混合 7890　透明 TCP 7893　透明 TCP+UDP 7894</td>
+                                        </tr>
+                                    </table>
 
-                            <!-- 状态 -->
-                            <div class="sb-card">
-                                <div class="hd">状态</div>
-                                <div class="bd">
-                                    <div class="sb-status">
-                                        <span id="sb_badge" class="sb-badge off">读取中…</span>
-                                        <span class="sb-meta"><i id="sb_dot" class="sb-dot off"></i>sing-box 内核</span>
-                                        <span class="sb-pill">配置：<span id="sb_size">-</span></span>
-                                        <span class="sb-pill">代理端口 7890 / 透明 7893</span>
-                                        <span class="sb-toolbar">
-                                            <button type="button" class="btn btn-success btn-small" onclick="sbSubmit('start');">启动</button>
-                                            <button type="button" class="btn btn-warning btn-small" onclick="sbSubmit('stop');">停止</button>
-                                            <button type="button" class="btn btn-small" onclick="sbSubmit('restart');">重启</button>
-                                            <button type="button" class="btn btn-small" onclick="sbSubmit('update-core');">更新内核</button>
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
+                                    <table width="100%" cellpadding="4" cellspacing="0" class="table">
+                                        <tr><th colspan="2" style="background-color: #E3E3E3;">导入节点</th></tr>
+                                        <tr>
+                                            <th width="50%" style="border-top: 0 none;">本地文件</th>
+                                            <td style="border-top: 0 none;">
+                                                <input type="file" id="sb_file" accept=".yaml,.yml,.json,.txt" onchange="sbLoadFile(this);" />
+                                                <div class="help-block" style="margin-bottom: 0;">支持 Clash / Mihomo YAML（浏览器内自动转 sing-box）或 sing-box JSON</div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>规则模式</th>
+                                            <td>
+                                                <select id="sb_mode" class="input">
+                                                    <option value="rule">规则模式（内网 / .cn 直连）</option>
+                                                    <option value="global">全局模式（全部走代理）</option>
+                                                </select>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>订阅地址</th>
+                                            <td>
+                                                <input type="text" id="sb_url" class="input span8" placeholder="https://…/singbox.json" />
+                                                <button type="button" class="btn btn-small" onclick="sbFetchSub();">下载订阅</button>
+                                                <div class="help-block" style="margin-bottom: 0;">地址需返回 sing-box JSON；返回 Clash YAML 的订阅请用上面的「本地文件」导入转换</div>
+                                            </td>
+                                        </tr>
+                                    </table>
 
-                            <!-- 导入 -->
-                            <div class="sb-card">
-                                <div class="hd">导入节点</div>
-                                <div class="bd">
-                                    <div class="sb-row">
-                                        <label class="btn btn-primary btn-small" style="margin:0;">
-                                            选择本地文件<input type="file" id="sb_file" accept=".yaml,.yml,.json,.txt" onchange="sbLoadFile(this);" style="display:none;" />
-                                        </label>
-                                        <span class="sb-hint">支持 Clash/Mihomo YAML（自动转 sing-box）或 sing-box JSON</span>
-                                    </div>
-                                    <div class="sb-row">
-                                        <select id="sb_mode" class="form-control" style="width:120px;">
-                                            <option value="rule">规则模式</option>
-                                            <option value="global">全局模式</option>
-                                        </select>
-                                        <span class="sb-hint">规则模式：内网与 .cn 直连，其余走代理</span>
-                                    </div>
-                                    <div class="sb-row">
-                                        <input type="text" id="sb_url" class="form-control" style="flex:1;min-width:260px;" placeholder="订阅地址（.yaml，返回 Clash 配置）" />
-                                        <button type="button" class="btn btn-small" onclick="sbFetchSub();">下载订阅</button>
-                                    </div>
-                                    <div class="sb-hint">订阅会直接保存为 sing-box 配置，因此地址必须返回 sing-box JSON；返回 Clash YAML 的订阅请先「选择本地文件」转换。</div>
-                                </div>
-                            </div>
+                                    <table width="100%" cellpadding="4" cellspacing="0" class="table">
+                                        <tr><th colspan="2" style="background-color: #E3E3E3;">配置 (config.json)</th></tr>
+                                        <tr>
+                                            <td colspan="2">
+                                                <textarea id="sb_cfg" name="proxy_cfg" rows="18" class="span12" spellcheck="false" style="font-family:'Courier New'; font-size:12px;"><% proxy_conf(); %></textarea>
+                                                <center>
+                                                    <button type="button" class="btn btn-small" onclick="sbSubmit('save');">保存配置</button>
+                                                    <button type="button" class="btn btn-small btn-primary" onclick="sbSubmit('save_start');">保存并应用</button>
+                                                </center>
+                                            </td>
+                                        </tr>
+                                    </table>
 
-                            <!-- 配置 -->
-                            <div class="sb-card">
-                                <div class="hd">配置 (config.json)</div>
-                                <div class="bd">
-                                    <textarea id="sb_cfg" name="proxy_cfg" class="sb-editor" spellcheck="false"><% proxy_conf(); %></textarea>
-                                    <div class="sb-row" style="margin-top:10px;justify-content:flex-end;">
-                                        <button type="button" class="btn btn-small" onclick="sbSubmit('save');">保存配置</button>
-                                        <button type="button" class="btn btn-primary btn-small" onclick="sbSubmit('save_start');">保存并应用</button>
-                                    </div>
-                                </div>
-                            </div>
+                                    <table width="100%" cellpadding="4" cellspacing="0" class="table">
+                                        <tr><th colspan="2" style="background-color: #E3E3E3;">内核</th></tr>
+                                        <tr>
+                                            <td colspan="2">
+                                                <input type="text" id="sb_core_url" class="input span8" value="<% nvram_get_x("","sb_core_url"); %>" placeholder="https://github.com/yandexru45/sing-box-extended-lite/releases/latest/download/sing-box-extended-lite-linux-mipsle-softfloat.tar.gz" />
+                                                <button type="button" class="btn btn-small" onclick="sbSaveCore();">保存地址</button>
+                                                <div class="help-block" style="margin-bottom: 0;">
+                                                    留空使用默认 extended-lite（约 15MB，下载到 /tmp 运行）；网络不通可换成 ghfast.top / gh-proxy 前缀的镜像地址
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
 
-                            <!-- 内核地址 -->
-                            <div class="sb-card">
-                                <div class="hd">内核</div>
-                                <div class="bd">
-                                    <div class="sb-row">
-                                        <input type="text" id="sb_core_url" class="form-control" style="flex:1;min-width:260px;" value="<% nvram_get_x("","sb_core_url"); %>" placeholder="sing-box mipsle 内核下载地址" />
-                                        <button type="button" class="btn btn-small" onclick="sbSaveCore();">保存地址</button>
-                                    </div>
-                                    <div class="sb-hint">默认 <span id="sb_core_view">https://github.com/yandexru45/sing-box-extended-lite/releases/latest/download/sing-box-extended-lite-linux-mipsle-softfloat.tar.gz</span>；内核约 15MB（extended-lite），运行时放在 /tmp（tmpfs 48MB）。</div>
-                                </div>
-                            </div>
-                        </form>
+                                    </form>
 
-                        <!-- 日志 -->
-                        <div class="sb-card">
-                            <div class="hd">运行日志 <span class="sb-hint" style="color:#dbeafe;">最近 8KB</span></div>
-                            <div class="bd">
-                                <div class="sb-log"><% proxy_log(); %></div>
-                                <div style="text-align:right;margin-top:8px;">
-                                    <button type="button" class="btn btn-small" onclick="location.href='/Advanced_Proxy_Content.asp';">刷新</button>
+                                    <table width="100%" cellpadding="4" cellspacing="0" class="table">
+                                        <tr><th style="background-color: #E3E3E3;">运行日志（最近 8KB）</th></tr>
+                                        <tr>
+                                            <td>
+                                                <pre style="max-height: 240px; overflow: auto; background: #f7f7f9; border: 1px solid #e1e1e8; border-radius: 4px; padding: 8px; font-size: 12px;"><% proxy_log(); %></pre>
+                                            </td>
+                                        </tr>
+                                    </table>
+
                                 </div>
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
