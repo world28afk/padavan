@@ -2370,57 +2370,6 @@ ej_detect_internet_hook(int eid, webs_t wp, int argc, char **argv)
 }
 
 static int
-mihomo_status_hook(int eid, webs_t wp, int argc, char **argv)
-{
-	FILE *fp;
-	int pid = 0;
-	char cfg[64] = "missing";
-
-	fp = fopen("/tmp/mihomo/mihomo.pid", "r");
-	if (fp) {
-		if (fscanf(fp, "%d", &pid) != 1)
-			pid = 0;
-		fclose(fp);
-	}
-
-	if (pid > 1 && kill(pid, 0) == 0)
-		websWrite(wp, "running");
-	else
-		websWrite(wp, "stopped");
-
-	if (f_exists("/etc/storage/mihomo/config.yaml"))
-		snprintf(cfg, sizeof(cfg), "ok");
-
-	websWrite(wp, "|%s", cfg);
-	return 0;
-}
-
-static int
-mihomo_conf_hook(int eid, webs_t wp, int argc, char **argv)
-{
-	FILE *fp;
-	char buf[512];
-	int n = 0;
-
-	fp = fopen("/etc/storage/mihomo/config.yaml", "r");
-	if (!fp)
-		return 0;
-
-	/* give up after 256KB, a Clash config should never be that large */
-	while (fgets(buf, sizeof(buf), fp) != NULL && n < (256 * 1024)) {
-		char *p;
-		for (p = buf; *p; p++) {
-			if (*p == '<') { fputs("&lt;", wp); n += 4; }
-			else if (*p == '>') { fputs("&gt;", wp); n += 4; }
-			else if (*p == '&') { fputs("&amp;", wp); n += 5; }
-			else { fputc(*p, wp); n++; }
-		}
-	}
-	fclose(fp);
-	return 0;
-}
-
-static int
 plugin_list_hook(int eid, webs_t wp, int argc, char **argv)
 {
 	DIR *dir;
@@ -3739,46 +3688,6 @@ apply_cgi(const char *url, webs_t wp)
 		websRedirect(wp, "/Advanced_Scripts_Content.asp");
 		return 0;
 	}
-	else if (!strcmp(value, " MihomoCmd "))
-	{
-		/* runtime mihomo manager: save config / fetch subscription / start / stop */
-		char *cmd = websGetVar(wp, "mihomo_cmd", "");
-		char *cfg = websGetVar(wp, "mihomo_cfg", "");
-		char *url = websGetVar(wp, "mihomo_url", "");
-		const char *p;
-
-		doSystem("mkdir -p /etc/storage/mihomo");
-
-		if (!strcmp(cmd, "save") || !strcmp(cmd, "save_start")) {
-			FILE *fp = fopen("/etc/storage/mihomo/config.yaml", "w");
-			if (fp) {
-				if (cfg)
-					fputs(cfg, fp);
-				fclose(fp);
-			}
-			doSystem("/sbin/mtd_storage.sh save >/dev/null 2>&1");
-			if (!strcmp(cmd, "save_start"))
-				doSystem("/usr/bin/mihomo.sh start >/dev/null 2>&1 &");
-		}
-		else if (!strcmp(cmd, "sub")) {
-			int valid = (url && !strncmp(url, "http", 4) && strlen(url) < 512);
-			for (p = url; valid && *p; p++) {
-				if (*p == '\'' || *p == '"' || *p == ';' || *p == '`' ||
-				    *p == '$' || *p == ' ' || *p == '\n' || *p == '\r')
-					valid = 0;
-			}
-			if (valid) {
-				doSystem("/usr/bin/update_mihomo_sub.sh '%s' >/dev/null 2>&1", url);
-				doSystem("/sbin/mtd_storage.sh save >/dev/null 2>&1");
-			}
-		}
-		else if (!strcmp(cmd, "start") || !strcmp(cmd, "stop") || !strcmp(cmd, "update-core")) {
-			doSystem("/usr/bin/mihomo.sh %s >/dev/null 2>&1 &", cmd);
-		}
-
-		websRedirect(wp, "/Advanced_Mihomo_Content.asp");
-		return 0;
-	}
 	else if (!strcmp(value, " RestoreNVRAM "))
 	{
 		websApply(wp, "Restarting.asp");
@@ -4712,8 +4621,6 @@ struct ej_handler ej_handlers[] =
 	{ "wan_action", wan_action_hook},
 	{ "wol_action", wol_action_hook},
 	{ "plugin_list", plugin_list_hook},
-	{ "mihomo_status", mihomo_status_hook},
-	{ "mihomo_conf", mihomo_conf_hook},
 	{ "nf_values", nf_values_hook},
 	{ "get_parameter", ej_get_parameter},
 	{ "get_nvram_list", ej_get_nvram_list},
