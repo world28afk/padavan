@@ -105,7 +105,9 @@ typedef uint8_t u8;
 #define EVM_RESTART_WIREGUARD	(1ULL << 62)
 #define EVM_RESTART_SQM		    (1ULL << 63)
 
-#define EVM_RESTART_REBOOT		(1ULL << 64)
+/* bit 16 is unused: (1ULL << 64) is undefined for a 64-bit type and the
+ * compiler folds it to 0 on mips32, so the "reboot" event never fired */
+#define EVM_RESTART_REBOOT		(1ULL << 16)
 
 #define EVM_BLOCK_UNSAFE		(1ULL << 65) /* special case */
 
