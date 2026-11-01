@@ -83,8 +83,16 @@ function initial(){
 				setTimeout("redirect()",(board_boot_time()+2)*1000);
 			}
 			else if(current_page == "Advanced_LAN_Content.asp" || current_page == "Advanced_APLAN_Content.asp"){
-				setTimeout("hideLoading()",5000);
-				setTimeout("redirect()", 7000);
+				if(restart_time > 7){
+					/* LAN MAC change: the router reboots, wait for it to come back */
+					var np = parent.location.protocol + '//' + parent.document.form.lan_ipaddr.value + '/' + current_page;
+					setTimeout("hideLoading()", (restart_time-2)*1000);
+					setTimeout("parent.parent.location.href = '"+np+"';", restart_time*1000);
+				}
+				else{
+					setTimeout("hideLoading()",5000);
+					setTimeout("redirect()", 7000);
+				}
 			}
 			else if(getflag == "nodetect"){
 				setTimeout("top_delay_redirect('"+current_page+"');", restart_time*1000);

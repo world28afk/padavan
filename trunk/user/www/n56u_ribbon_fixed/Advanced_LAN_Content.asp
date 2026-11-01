@@ -32,6 +32,7 @@ $j(document).ready(function() {
 
 var old_lan_addr = "<% nvram_get_x("","lan_ipaddr"); %>";
 var old_lan_mask = "<% nvram_get_x("","lan_netmask"); %>";
+var old_lan_hwaddr = "<% nvram_get_x("","lan_hwaddr_x"); %>";
 
 function initial(){
 	show_banner(1);
@@ -88,6 +89,14 @@ function validForm(){
 		}
 		if (b0 == 0 && document.form.lan_hwaddr_x.value == '000000000000') {
 			alert('全零地址不能作为 MAC');
+			return false;
+		}
+	}
+
+	/* 交换机 CPU 端口、硬件 NAT、无线 BSSID 都在启动时固定使用这个 MAC，
+	 * 热改会让三者不同步导致断流，所以改 MAC 一律重启生效 */
+	if (document.form.lan_hwaddr_x && document.form.lan_hwaddr_x.value != old_lan_hwaddr) {
+		if (!confirm('修改内网 MAC 后路由器会自动重启（约 30 秒），期间网络会中断，确定继续？')) {
 			return false;
 		}
 	}

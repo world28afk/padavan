@@ -72,6 +72,10 @@ static int wl_modified = 0;
 #endif
 static int rt_modified = 0;
 static u64 restart_needed_bits = 0;
+/* set when lan_hwaddr_x is changed: the LAN MAC is baked into the switch,
+ * the hardware NAT tables and the wireless BSSID at boot, so a live change
+ * desyncs them and traffic stalls.  Reboot instead, like Breed does. */
+static int lan_mac_reboot = 0;
 
 static char post_buf[65535] = {0};
 static char post_buf_backup[65535] = {0};
@@ -949,6 +953,9 @@ validate_asp_apply(webs_t wp, int sid)
 		
 		nvram_set(v->name, value);
 		nvram_modified = 1;
+
+		if (!strcmp(v->name, "lan_hwaddr_x"))
+			lan_mac_reboot = 1;
 		
 		if (!strcmp(v->name, "http_username"))
 			user_changed = 1;
@@ -1181,6 +1188,7 @@ update_variables_ex(int eid, webs_t wp, int argc, char **argv)
 	int result;
 
 	restart_needed_bits = 0;
+	lan_mac_reboot = 0;
 
 	// assign control variables
 	action_mode = websGetVar(wp, "action_mode", "");
@@ -1205,6 +1213,7 @@ update_variables_ex(int eid, webs_t wp, int argc, char **argv)
 			validate_asp_apply(wp, sid);
 			/* block restart signal (only nvram update + call script) */
 			restart_needed_bits = 0;
+			lan_mac_reboot = 0;
 		}
 		else {
 			char group_id[64];
@@ -1284,7 +1293,7 @@ update_variables_ex(int eid, webs_t wp, int argc, char **argv)
 		return 0;
 	}
 
-	if (restart_needed_bits != 0 && (!strcmp(action_mode, " Apply ") || !strcmp(action_mode, " Restart "))) {
+	if ((restart_needed_bits != 0 || lan_mac_reboot) && (!strcmp(action_mode, " Apply ") || !strcmp(action_mode, " Restart "))) {
 		int i;
 		u32 restart_total_time = 0;
 		u32 max_time;
@@ -1323,6 +1332,9 @@ update_variables_ex(int eid, webs_t wp, int argc, char **argv)
 		if ((restart_needed_bits & EVM_RESTART_REBOOT) != 0)
 			restart_total_time = MAX(EVT_RESTART_REBOOT, restart_total_time);
 		
+		if (lan_mac_reboot)
+			restart_total_time = MAX(30, restart_total_time);
+		
 		websWrite(wp, "<script>restart_needed_time(%u);</script>\n", restart_total_time);
 	}
 
@@ -1344,6 +1356,18 @@ static int
 ej_notify_services(int eid, webs_t wp, int argc, char **argv)
 {
 	int i;
+
+	/* LAN MAC change: the switch CPU port, the hardware NAT tables and the
+	 * wireless BSSID are all derived from this address at boot time, so a
+	 * live change leaves them out of sync and traffic stalls.  Persist the
+	 * value and let init reboot, exactly like writing the MAC in Breed. */
+	if (lan_mac_reboot) {
+		lan_mac_reboot = 0;
+		restart_needed_bits = 0;
+		nvram_commit();
+		notify_rc(RCN_RESTART_REBOOT);
+		return 0;
+	}
 
 	if (!restart_needed_bits)
 		return 0;

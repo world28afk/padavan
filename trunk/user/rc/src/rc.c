@@ -900,6 +900,9 @@ handle_notifications(void)
 		if (!strcmp(entry->d_name, RCN_RESTART_REBOOT))
 		{
 			stop_handle = 1;
+			/* give httpd a moment to flush the WebUI response (restart
+			 * countdown / redirect) before the network goes down */
+			sleep(2);
 			sys_exit();
 		}
 		else if (!strcmp(entry->d_name, "flash_firmware"))
